@@ -12,31 +12,31 @@ using RR7Unpacker.TOC;
 
 namespace RR7Unpacker
 {
-    public class RR7Unpacker
-    {
-        public RR7TableOfContents TOC { get; set; }
-        public const int BlockSize = 0x800;
+	public class RR7Unpacker
+	{
+		public RR7TableOfContents TOC { get; set; }
+		public const int BlockSize = 0x800;
 
 		private string _outputPath;
 		public string _inputPath;
 
 		public RR7Unpacker(string inputPath, string outputPath)
-        {
+		{
 			_inputPath = inputPath;
 			_outputPath = outputPath;
-        }
+		}
 
-        public void ReadToc(string elfPath)
-        {
-            TOC = new RR7TableOfContents(elfPath);
-            TOC.Read();
-        }
+		public void ReadToc(string elfPath)
+		{
+			TOC = new RR7TableOfContents(elfPath);
+			TOC.Read();
+		}
 
-        public void ExtractContainers()
-        {
+		public void ExtractContainers()
+		{
 			Console.WriteLine("Starting to unpack..");
 
-            using var fs = File.Open(_inputPath, FileMode.Open);
+			using var fs = File.Open(_inputPath, FileMode.Open);
 			Directory.CreateDirectory(_outputPath);
 
 			int i = 0;
@@ -45,7 +45,7 @@ namespace RR7Unpacker
 				string containerDir = Path.Combine(_outputPath, container.Name);
 				Directory.CreateDirectory(containerDir);
 
-				Console.WriteLine($"[{i+1}/{TOC.ContainerDescriptors.Count}] {container.Name}");
+				Console.WriteLine($"[{i + 1}/{TOC.ContainerDescriptors.Count}] {container.Name}");
 
 				// Grab container data
 				byte[] containerData;
@@ -89,6 +89,5 @@ namespace RR7Unpacker
 
 			Console.WriteLine("Done.");
 		}
-
-    }
+	}
 }

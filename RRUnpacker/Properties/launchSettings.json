@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "RRUnpacker": {
+      "commandName": "Project",
+      "commandLineArgs": "rrn -i \"C:\\Users\\nenkai\\Desktop\\RR_PSV\\OutUnpacked\\app\\PCSB00048_dec\\Disc\\RRN.DAT\" --info \"C:\\Users\\nenkai\\Desktop\\RR_PSV\\OutUnpacked\\app\\PCSB00048_dec\\Disc\\cmFileListDisc.info\" -o test"
+    }
+  }
+}

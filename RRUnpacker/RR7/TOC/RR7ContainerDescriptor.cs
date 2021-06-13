@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RR7Unpacker
+namespace RRUnpacker.RR7
 {
     public class RR7ContainerDescriptor
     {

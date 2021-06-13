@@ -7,7 +7,7 @@ using System.IO;
 
 using Syroot.BinaryData;
 
-namespace RR7Unpacker
+namespace RRUnpacker
 {
     public static class RRDecompressor
     {

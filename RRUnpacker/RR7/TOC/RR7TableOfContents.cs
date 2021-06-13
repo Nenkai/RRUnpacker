@@ -7,7 +7,7 @@ using System.IO;
 
 using Syroot.BinaryData;
 
-namespace RR7Unpacker.TOC
+namespace RRUnpacker.RR7.TOC
 {
     public class RR7TableOfContents
     {

@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.31112.23
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RR7Unpacker", "RR7Unpacker\RR7Unpacker.csproj", "{1BBBA5C4-1F7F-419F-9968-331D5163E45D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RRUnpacker", "RRUnpacker\RRUnpacker.csproj", "{1BBBA5C4-1F7F-419F-9968-331D5163E45D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

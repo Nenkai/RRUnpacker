@@ -8,27 +8,27 @@ using System.Buffers;
 
 using Syroot.BinaryData;
 
-using RR7Unpacker.TOC;
+using RRUnpacker.RRN.TOC;
 
-namespace RR7Unpacker
+namespace RRUnpacker.RRN
 {
-	public class RR7Unpacker
+	public class RRNUnpacker
 	{
-		public RR7TableOfContents TOC { get; set; }
+		public RRNTableOfContents TOC { get; set; }
 		public const int BlockSize = 0x800;
 
 		private string _outputPath;
 		public string _inputPath;
 
-		public RR7Unpacker(string inputPath, string outputPath)
+		public RRNUnpacker(string inputPath, string outputPath)
 		{
 			_inputPath = inputPath;
 			_outputPath = outputPath;
 		}
 
-		public void ReadToc(string elfPath)
+		public void ReadToc(string infoFile)
 		{
-			TOC = new RR7TableOfContents(elfPath);
+			TOC = new RRNTableOfContents(infoFile);
 			TOC.Read();
 		}
 
@@ -52,8 +52,13 @@ namespace RR7Unpacker
 				if (container.Compressed)
 				{
 					fs.Position = (long)container.SectorOffset * BlockSize;
-					long compOff = BlockSize - (container.CompressedSize % BlockSize);
-					fs.Position += compOff;
+
+					// Padding happens at the beginning rather than the end
+					if (container.CompressedSize % BlockSize != 0)
+					{
+						long compOff = BlockSize - (container.CompressedSize % BlockSize);
+						fs.Position += compOff;
+					}
 
 					containerData = ArrayPool<byte>.Shared.Rent((int)container.UncompressedSize);
 					Span<byte> containerDecompressed = containerData.AsSpan(0, (int)container.UncompressedSize);
@@ -61,7 +66,7 @@ namespace RR7Unpacker
 				}
 				else
 				{
-					int containerSize = container.SectorSize * BlockSize;
+					int containerSize = (int)(container.SectorSize * BlockSize);
 					fs.Position = (long)container.SectorOffset * BlockSize;
 					containerData = ArrayPool<byte>.Shared.Rent(containerSize);
 					fs.Read(containerData, 0, containerSize);
@@ -71,20 +76,22 @@ namespace RR7Unpacker
 				using var bs = new BinaryStream(ms);
 
 				// Extract files
+				
 				for (int index = container.FileDescriptorEntryIndexStart; index < container.FileDescriptorEntryIndexEnd; index++)
 				{
-					RR7FileDescriptor file = TOC.FileDescriptors[index];
+					RRNFileDescriptor file = TOC.FileDescriptors[index];
 					Console.WriteLine($"- {container.Name} -> {file.Name}");
 
-					bs.Position = file.OffsetWithinContainer;
+					bs.Position = file.FileOffsetWithinContainer;
 
 					// Could be better, lazy
 					byte[] fileData = bs.ReadBytes((int)file.FileSizeWithinContainer);
 					File.WriteAllBytes(Path.Combine(containerDir, file.Name), fileData);
 				}
-
+				
 				ArrayPool<byte>.Shared.Return(containerData);
 				i++;
+				
 			}
 
 			Console.WriteLine("Done.");

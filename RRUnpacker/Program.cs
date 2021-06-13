@@ -2,6 +2,7 @@
 using System.IO;
 
 using RRUnpacker.RR7;
+using RRUnpacker.RR6;
 using RRUnpacker.RRN;
 
 using CommandLine;
@@ -13,11 +14,12 @@ namespace RRUnpacker
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("RR7Unpacker (RR7.DAT) by Nenkai#9075");
+            Console.WriteLine("RRUnpacker for RR7, RR6, RR PSV by Nenkai#9075");
             Console.WriteLine();
 
-            Parser.Default.ParseArguments<RR7Verbs, RRNVerbs>(args)
+            Parser.Default.ParseArguments<RR7Verbs, RR6Verbs, RRNVerbs>(args)
                 .WithParsed<RR7Verbs>(RR7Action)
+                .WithParsed<RR6Verbs>(RR6Action)
                 .WithParsed<RRNVerbs>(RRNAction);    
         }
 
@@ -37,6 +39,25 @@ namespace RRUnpacker
 
             var unpacker = new RR7Unpacker(options.InputPath, options.OutputPath);
             unpacker.ReadToc(options.GameCode, options.ElfPath);
+            unpacker.ExtractContainers();
+        }
+
+        public static void RR6Action(RR6Verbs options)
+        {
+            if (!File.Exists(options.XexPath))
+            {
+                Console.WriteLine($"Provided XEX file '{options.XexPath}' does not exist.");
+                return;
+            }
+
+            if (!File.Exists(options.InputPath))
+            {
+                Console.WriteLine($"Provided .DAT file '{options.InputPath}' does not exist.");
+                return;
+            }
+
+            var unpacker = new RR6Unpacker(options.InputPath, options.OutputPath);
+            unpacker.ReadToc(options.XexPath);
             unpacker.ExtractContainers();
         }
 
@@ -68,11 +89,24 @@ namespace RRUnpacker
         [Option('i', "input", Required = true, HelpText = "Input .DAT file like RR7.DAT.")]
         public string InputPath { get; set; }
 
-        [Option('e', "elf-path", Required = true, HelpText = "Input .info file that should be next to the DAT file.")]
+        [Option('e', "elf-path", Required = true, HelpText = "Input .elf file that should be decrypted. Example: main.elf.")]
         public string ElfPath { get; set; }
 
         [Option('g', "gamecode", Required = true, HelpText = "Game Code of the game. Example: NPEB00513")]
         public string GameCode { get; set; }
+
+        [Option('o', "output", Required = true, HelpText = "Output directory for the extracted files.")]
+        public string OutputPath { get; set; }
+    }
+
+    [Verb("rr6", HelpText = "Unpacks .DAT files for Ridge Racer 6 (X360).")]
+    public class RR6Verbs
+    {
+        [Option('i', "input", Required = true, HelpText = "Input .DAT file like RRM.DAT/RRM2.DAT/RRM3.DAT.")]
+        public string InputPath { get; set; }
+
+        [Option('x', "xex-path", Required = true, HelpText = "Input .xex file. Must be decrypted (through XeXTool).")]
+        public string XexPath { get; set; }
 
         [Option('o', "output", Required = true, HelpText = "Output directory for the extracted files.")]
         public string OutputPath { get; set; }

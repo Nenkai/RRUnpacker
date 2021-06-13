@@ -9,21 +9,32 @@ using Syroot.BinaryData;
 
 namespace RRUnpacker.RR7.TOC
 {
+    public record TOCInformation (int FileCount, int ContainerCount, int TOCOffset);
+
     public class RR7TableOfContents
     {
-        public const int TOC_ELF_OFFSET = 0x620128;
-        public const int ELF_OFFSET_DIFF = 0xFB30000;
+        public static Dictionary<string, TOCInformation> TOCInfos = new()
+        {
+            { "NPUB30457", new TOCInformation(2_088, 12_810, 0x620128) },
+            { "NPEB00513", new TOCInformation(2_139, 13_313, 0x630128) },
 
-        public const int ContainerCount = 2_088;
-        public const int FileCount = 12_810;
+        };
+
+        public TOCInformation CurrentTOCInfo { get; set; }
+
+        public const int ELF_OFFSET_DIFF = 0xFB20000;
 
         public List<RR7FileDescriptor> FileDescriptors = new();
         public List<RR7ContainerDescriptor> ContainerDescriptors = new();
 
         private string _elfPath;
 
-        public RR7TableOfContents(string elfPath)
+        public RR7TableOfContents(string gameCode, string elfPath)
         {
+            if (!TOCInfos.TryGetValue(gameCode, out TOCInformation toc))
+                throw new ArgumentException("Invalid or non-supported game code provided.");
+
+            CurrentTOCInfo = toc;
             _elfPath = elfPath;
         }
 
@@ -32,14 +43,14 @@ namespace RRUnpacker.RR7.TOC
             using var fs = new FileStream(_elfPath, FileMode.Open);
             using var bs = new BinaryStream(fs, ByteConverter.Big);
 
-            fs.Position = TOC_ELF_OFFSET;
+            fs.Position = CurrentTOCInfo.TOCOffset;
             ReadFileDescriptors(bs);
             ReadContainerDescriptors(bs);
         }
 
         private void ReadContainerDescriptors(BinaryStream bs)
         {
-            for (int i = 0; i < ContainerCount; i++)
+            for (int i = 0; i < CurrentTOCInfo.ContainerCount; i++)
             {
                 RR7ContainerDescriptor desc = new RR7ContainerDescriptor();
 
@@ -63,7 +74,7 @@ namespace RRUnpacker.RR7.TOC
 
         private void ReadFileDescriptors(BinaryStream bs)
         {
-            for (int i = 0; i < FileCount; i++)
+            for (int i = 0; i < CurrentTOCInfo.FileCount; i++)
             {
                 RR7FileDescriptor desc = new RR7FileDescriptor();
 

@@ -26,9 +26,9 @@ namespace RRUnpacker.RR7
 			_outputPath = outputPath;
 		}
 
-		public void ReadToc(string elfPath)
+		public void ReadToc(string gameCode, string elfPath)
 		{
-			TOC = new RR7TableOfContents(elfPath);
+			TOC = new RR7TableOfContents(gameCode, elfPath);
 			TOC.Read();
 		}
 

@@ -36,7 +36,7 @@ namespace RRUnpacker
             }
 
             var unpacker = new RR7Unpacker(options.InputPath, options.OutputPath);
-            unpacker.ReadToc(options.ElfPath);
+            unpacker.ReadToc(options.GameCode, options.ElfPath);
             unpacker.ExtractContainers();
         }
 
@@ -70,6 +70,9 @@ namespace RRUnpacker
 
         [Option('e', "elf-path", Required = true, HelpText = "Input .info file that should be next to the DAT file.")]
         public string ElfPath { get; set; }
+
+        [Option('g', "gamecode", Required = true, HelpText = "Game Code of the game. Example: NPEB00513")]
+        public string GameCode { get; set; }
 
         [Option('o', "output", Required = true, HelpText = "Output directory for the extracted files.")]
         public string OutputPath { get; set; }

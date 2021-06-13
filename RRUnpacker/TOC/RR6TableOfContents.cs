@@ -7,9 +7,12 @@ using System.IO;
 
 using Syroot.BinaryData;
 
-namespace RRUnpacker.RR6.TOC
+namespace RRUnpacker.TOC
 {
-    public class RR6TableOfContents
+    /// <summary>
+    /// TOC Within the XEX executable for RR6.
+    /// </summary>
+    public class RR6TableOfContents : ITableOfContents
     {
         // Within XEX
         public const int TOC_OFFSET = 0x339698;
@@ -18,20 +21,20 @@ namespace RRUnpacker.RR6.TOC
         // RRM1.DAT
         public const int RRM1ContainerCount = 431;
         public const int RRM1FileCount = 1277;
-        public List<RR6FileDescriptor> FileDescriptors1;
-        public List<RR6ContainerDescriptor> ContainerDescriptors1;
+        public List<RRFileDescriptor> FileDescriptors1;
+        public List<RRContainerDescriptor> ContainerDescriptors1;
 
         // RRM2.DAT
         public const int RRM2ContainerCount = 60;
         public const int RRM2FileCount = 550;
-        public List<RR6FileDescriptor> FileDescriptors2;
-        public List<RR6ContainerDescriptor> ContainerDescriptors2;
+        public List<RRFileDescriptor> FileDescriptors2;
+        public List<RRContainerDescriptor> ContainerDescriptors2;
 
         // RRM3.DAT
         public const int RRM3ContainerCount = 1224;
         public const int RRM3FileCount = 1465;
-        public List<RR6FileDescriptor> FileDescriptors3;
-        public List<RR6ContainerDescriptor> ContainerDescriptors3;
+        public List<RRFileDescriptor> FileDescriptors3;
+        public List<RRContainerDescriptor> ContainerDescriptors3;
 
         private string _elfPath;
 
@@ -57,7 +60,7 @@ namespace RRUnpacker.RR6.TOC
 
         }
 
-        public List<RR6ContainerDescriptor> GetContainerTOCByFileName(string fileName)
+        public List<RRContainerDescriptor> GetContainers(string fileName)
         {
             return fileName switch
             {
@@ -68,7 +71,7 @@ namespace RRUnpacker.RR6.TOC
             };
         }
 
-        public List<RR6FileDescriptor> GetFileTOCByFileName(string fileName)
+        public List<RRFileDescriptor> GetFiles(string fileName)
         {
             return fileName switch
             {
@@ -79,12 +82,12 @@ namespace RRUnpacker.RR6.TOC
             };
         }
 
-        private List<RR6ContainerDescriptor> ReadContainerDescriptors(BinaryStream bs, int size)
+        private List<RRContainerDescriptor> ReadContainerDescriptors(BinaryStream bs, int size)
         {
-            var list = new List<RR6ContainerDescriptor>();
+            var list = new List<RRContainerDescriptor>();
             for (int i = 0; i < size; i++)
             {
-                RR6ContainerDescriptor desc = new RR6ContainerDescriptor();
+                RRContainerDescriptor desc = new RRContainerDescriptor();
 
                 uint nameOffset = bs.ReadUInt32();
                 using (var seek = bs.TemporarySeek(nameOffset - XEX_OFFSET_DIFF, SeekOrigin.Begin))
@@ -103,16 +106,17 @@ namespace RRUnpacker.RR6.TOC
                 bs.Position += 8;
             }
 
+            // Elf struct entries aligned on a 0x08
             bs.Align(0x08);
             return list;
         }
 
-        private List<RR6FileDescriptor> ReadFileDescriptors(BinaryStream bs, int size)
+        private List<RRFileDescriptor> ReadFileDescriptors(BinaryStream bs, int size)
         {
-            var list = new List<RR6FileDescriptor>();
+            var list = new List<RRFileDescriptor>();
             for (int i = 0; i < size; i++)
             {
-                RR6FileDescriptor desc = new RR6FileDescriptor();
+                RRFileDescriptor desc = new RRFileDescriptor();
 
                 uint nameOffset = bs.ReadUInt32();
                 using (var seek = bs.TemporarySeek(nameOffset - XEX_OFFSET_DIFF, SeekOrigin.Begin))
@@ -125,6 +129,7 @@ namespace RRUnpacker.RR6.TOC
                 list.Add(desc);
             }
 
+            // Elf struct entries aligned on a 0x08
             bs.Align(0x08);
             return list;
         }

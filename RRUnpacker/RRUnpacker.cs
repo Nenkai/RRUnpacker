@@ -8,29 +8,27 @@ using System.Buffers;
 
 using Syroot.BinaryData;
 
-using RRUnpacker.RR7.TOC;
+using RRUnpacker.TOC;
 
-namespace RRUnpacker.RR7
+namespace RRUnpacker
 {
-	public class RR7Unpacker
+	public class RRUnpacker<T> where T : ITableOfContents
 	{
-		public RR7TableOfContents TOC { get; set; }
-		public const int BlockSize = 0x800;
+		public T TOC { get; set; }
 
 		private string _outputPath;
-		public string _inputPath;
+		private string _inputPath;
 
-		public RR7Unpacker(string inputPath, string outputPath)
+		public RRUnpacker(string inputPath, string outputPath)
 		{
 			_inputPath = inputPath;
 			_outputPath = outputPath;
 		}
 
-		public void ReadToc(string gameCode, string elfPath)
-		{
-			TOC = new RR7TableOfContents(gameCode, elfPath);
-			TOC.Read();
-		}
+		public void SetToc(T toc)
+        {
+			TOC = toc;
+        }
 
 		public void ExtractContainers()
 		{
@@ -40,19 +38,24 @@ namespace RRUnpacker.RR7
 			Directory.CreateDirectory(_outputPath);
 
 			int i = 0;
-			foreach (var container in TOC.ContainerDescriptors)
+
+			string fileName = Path.GetFileNameWithoutExtension(_inputPath);
+			List<RRContainerDescriptor> containerInfo = TOC.GetContainers(fileName);
+			List<RRFileDescriptor> fileInfo = TOC.GetFiles(fileName);
+
+			foreach (var container in containerInfo)
 			{
 				string containerDir = Path.Combine(_outputPath, container.Name);
 				Directory.CreateDirectory(containerDir);
 
-				Console.WriteLine($"[{i + 1}/{TOC.ContainerDescriptors.Count}] {container.Name}");
+				Console.WriteLine($"[{i + 1}/{containerInfo.Count}] {container.Name}");
 
 				// Grab container data
 				byte[] containerData;
 				if (container.Compressed)
 				{
-					fs.Position = (long)container.SectorOffset * BlockSize;
-					long compOff = BlockSize - (container.CompressedSize % BlockSize);
+					fs.Position = (long)container.SectorOffset * RRConsts.BlockSize;
+					long compOff = RRConsts.BlockSize - (container.CompressedSize % RRConsts.BlockSize);
 					fs.Position += compOff;
 
 					containerData = ArrayPool<byte>.Shared.Rent((int)container.UncompressedSize);
@@ -61,8 +64,8 @@ namespace RRUnpacker.RR7
 				}
 				else
 				{
-					int containerSize = container.SectorSize * BlockSize;
-					fs.Position = (long)container.SectorOffset * BlockSize;
+					int containerSize = container.SectorSize * RRConsts.BlockSize;
+					fs.Position = (long)container.SectorOffset * RRConsts.BlockSize;
 					containerData = ArrayPool<byte>.Shared.Rent(containerSize);
 					fs.Read(containerData, 0, containerSize);
 				}
@@ -73,7 +76,7 @@ namespace RRUnpacker.RR7
 				// Extract files
 				for (int index = container.FileDescriptorEntryIndexStart; index < container.FileDescriptorEntryIndexEnd; index++)
 				{
-					RR7FileDescriptor file = TOC.FileDescriptors[index];
+					RRFileDescriptor file = fileInfo[index];
 					Console.WriteLine($"- {container.Name} -> {file.Name}");
 
 					bs.Position = file.OffsetWithinContainer;

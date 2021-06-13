@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RRUnpacker.RR7
+namespace RRUnpacker
 {
-    public class RR7ContainerDescriptor
+    public class RRContainerDescriptor
     {
         public string Name { get; set; }
         public uint SectorOffset { get; set; }

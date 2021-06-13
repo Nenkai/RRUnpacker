@@ -1,9 +1,7 @@
 ﻿using System;
 using System.IO;
 
-using RRUnpacker.RR7;
-using RRUnpacker.RR6;
-using RRUnpacker.RRN;
+using RRUnpacker.TOC;
 
 using CommandLine;
 using CommandLine.Text;
@@ -14,12 +12,13 @@ namespace RRUnpacker
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("RRUnpacker for RR7, RR6, RR PSV by Nenkai#9075");
+            Console.WriteLine("RRUnpacker for Ridge Racer PSP (V2), 6, 7, PS Vita by Nenkai#9075");
             Console.WriteLine();
 
-            Parser.Default.ParseArguments<RR7Verbs, RR6Verbs, RRNVerbs>(args)
+            Parser.Default.ParseArguments<RR7Verbs, RR6Verbs, RRNVerbs, RRPSPVerbs>(args)
                 .WithParsed<RR7Verbs>(RR7Action)
                 .WithParsed<RR6Verbs>(RR6Action)
+                .WithParsed<RRPSPVerbs>(RRPSPAction)
                 .WithParsed<RRNVerbs>(RRNAction);    
         }
 
@@ -37,8 +36,11 @@ namespace RRUnpacker
                 return;
             }
 
-            var unpacker = new RR7Unpacker(options.InputPath, options.OutputPath);
-            unpacker.ReadToc(options.GameCode, options.ElfPath);
+            var toc = new RR7TableOfContents(options.GameCode, options.ElfPath);
+            toc.Read();
+
+            var unpacker = new RRUnpacker<RR7TableOfContents>(options.InputPath, options.OutputPath);
+            unpacker.SetToc(toc);
             unpacker.ExtractContainers();
         }
 
@@ -56,8 +58,11 @@ namespace RRUnpacker
                 return;
             }
 
-            var unpacker = new RR6Unpacker(options.InputPath, options.OutputPath);
-            unpacker.ReadToc(options.XexPath);
+            var toc = new RR6TableOfContents(options.XexPath);
+            toc.Read();
+
+            var unpacker = new RRUnpacker<RR6TableOfContents>(options.InputPath, options.OutputPath);
+            unpacker.SetToc(toc);
             unpacker.ExtractContainers();
         }
 
@@ -75,8 +80,33 @@ namespace RRUnpacker
                 return;
             }
 
-            var unpacker = new RRNUnpacker(options.InputPath, options.OutputPath);
-            unpacker.ReadToc(options.InfoPath);
+            var toc = new RRNTableOfContents(options.InfoPath);
+            toc.Read();
+
+            var unpacker = new RRUnpacker<RRNTableOfContents>(options.InputPath, options.OutputPath);
+            unpacker.SetToc(toc);
+            unpacker.ExtractContainers();
+        }
+
+        public static void RRPSPAction(RRPSPVerbs options)
+        {
+            if (!File.Exists(options.InfoPath))
+            {
+                Console.WriteLine($"Provided Info file '{options.InfoPath}' does not exist.");
+                return;
+            }
+
+            if (!File.Exists(options.InputPath))
+            {
+                Console.WriteLine($"Provided .DAT file '{options.InputPath}' does not exist.");
+                return;
+            }
+
+            var toc = new RRPTableOfContents(options.InfoPath);
+            toc.Read();
+
+            var unpacker = new RRUnpacker<RRPTableOfContents>(options.InputPath, options.OutputPath);
+            unpacker.SetToc(toc);
             unpacker.ExtractContainers();
         }
     }
@@ -89,7 +119,7 @@ namespace RRUnpacker
         [Option('i', "input", Required = true, HelpText = "Input .DAT file like RR7.DAT.")]
         public string InputPath { get; set; }
 
-        [Option('e', "elf-path", Required = true, HelpText = "Input .elf file that should be decrypted. Example: main.elf.")]
+        [Option('e', "elf-path", Required = true, HelpText = "Input .elf file that should already be decrypted. Example: main.elf.")]
         public string ElfPath { get; set; }
 
         [Option('g', "gamecode", Required = true, HelpText = "Game Code of the game. Example: NPEB00513")]
@@ -105,7 +135,7 @@ namespace RRUnpacker
         [Option('i', "input", Required = true, HelpText = "Input .DAT file like RRM.DAT/RRM2.DAT/RRM3.DAT.")]
         public string InputPath { get; set; }
 
-        [Option('x', "xex-path", Required = true, HelpText = "Input .xex file. Must be decrypted (through XeXTool).")]
+        [Option('x', "xex-path", Required = true, HelpText = "Input .xex file. MUST be decrypted through XeXTool.")]
         public string XexPath { get; set; }
 
         [Option('o', "output", Required = true, HelpText = "Output directory for the extracted files.")]
@@ -118,7 +148,20 @@ namespace RRUnpacker
         [Option('i', "input", Required = true, HelpText = "Input .DAT file like RRN.DAT.")]
         public string InputPath { get; set; }
 
-        [Option("info", Required = true, HelpText = "Input decrypted .elf file for the game. Example: main.self.")]
+        [Option("info", Required = true, HelpText = "Input .info linked to the .dat file which should be next to it.")]
+        public string InfoPath { get; set; }
+
+        [Option('o', "output", Required = true, HelpText = "Output directory for the extracted files.")]
+        public string OutputPath { get; set; }
+    }
+
+    [Verb("rrpsp", HelpText = "Unpacks .DAT files for Ridge Racer Version 2 (PSP).")]
+    public class RRPSPVerbs
+    {
+        [Option('i', "input", Required = true, HelpText = "Input .DAT file like RRP.DAT.")]
+        public string InputPath { get; set; }
+
+        [Option('e', "elf-path", Required = true, HelpText = "Input .elf file that should already be decrypted. Example: BOOT.elf.")]
         public string InfoPath { get; set; }
 
         [Option('o', "output", Required = true, HelpText = "Output directory for the extracted files.")]

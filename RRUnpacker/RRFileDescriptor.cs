@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RRUnpacker.RR6
+namespace RRUnpacker
 {
-    public class RR6FileDescriptor
+    public class RRFileDescriptor
     {
         public string Name { get; set; }
         public uint OffsetWithinContainer { get; set; }

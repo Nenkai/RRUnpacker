@@ -7,12 +7,15 @@ using System.IO;
 
 using Syroot.BinaryData;
 
-namespace RRUnpacker.RRN.TOC
+namespace RRUnpacker.TOC
 {
-    public class RRNTableOfContents
+    /// <summary>
+    /// TOC Within .info files for RR PS Vita.
+    /// </summary>
+    public class RRNTableOfContents : ITableOfContents
     {
-        public List<RRNFileDescriptor> FileDescriptors = new();
-        public List<RRNContainerDescriptor> ContainerDescriptors = new();
+        public List<RRFileDescriptor> FileDescriptors = new();
+        public List<RRContainerDescriptor> ContainerDescriptors = new();
 
         public ulong ContainerFileSize { get; set; }
         public ulong ContainerTotalUncompressedSize { get; set; }
@@ -30,6 +33,12 @@ namespace RRUnpacker.RRN.TOC
 
             ReadTOC(textReader);
         }
+
+        public List<RRFileDescriptor> GetFiles(string fileName)
+            => FileDescriptors;
+
+        public List<RRContainerDescriptor> GetContainers(string fileName)
+            => ContainerDescriptors;
 
         private void ReadTOC(StreamReader reader)
         {
@@ -67,19 +76,19 @@ namespace RRUnpacker.RRN.TOC
                     continue;
                 }
 
-                if (!uint.TryParse(spl[2], out uint sectorSize))
+                if (!ushort.TryParse(spl[2], out ushort sectorSize))
                 {
                     Console.WriteLine($"Skipping line '{str}', could not parse container sector size '{spl[2]}'.");
                     continue;
                 }
 
-                if (!int.TryParse(spl[3], out int fileIndexStart))
+                if (!ushort.TryParse(spl[3], out ushort fileIndexStart))
                 {
                     Console.WriteLine($"Skipping line '{str}', could not parse container file index start '{spl[3]}'.");
                     continue;
                 }
 
-                if (!int.TryParse(spl[4], out int fileIndexEnd))
+                if (!ushort.TryParse(spl[4], out ushort fileIndexEnd))
                 {
                     Console.WriteLine($"Skipping line '{str}', could not parse container file index end '{spl[4]}'.");
                     continue;
@@ -109,7 +118,7 @@ namespace RRUnpacker.RRN.TOC
                     continue;
                 }
 
-                RRNContainerDescriptor containerDescriptor = new RRNContainerDescriptor();
+                RRContainerDescriptor containerDescriptor = new RRContainerDescriptor();
                 containerDescriptor.Name = containerName;
                 containerDescriptor.SectorOffset = sectorOffset;
                 containerDescriptor.SectorSize = sectorSize;
@@ -166,13 +175,15 @@ namespace RRUnpacker.RRN.TOC
                     continue;
                 }
 
-                RRNFileDescriptor fileDescriptor = new RRNFileDescriptor();
+                RRFileDescriptor fileDescriptor = new RRFileDescriptor();
                 fileDescriptor.Name = containerName;
+                /*
                 fileDescriptor.SectorOffset = sectorOffset;
                 fileDescriptor.SectorSize = sectorSize;
                 fileDescriptor.UnkFlag = unkFlag;
+                */
                 fileDescriptor.FileSizeWithinContainer = fileSizeWithinContainer;
-                fileDescriptor.FileOffsetWithinContainer = fileOffsetWithinContainer;
+                fileDescriptor.OffsetWithinContainer = fileOffsetWithinContainer;
 
                 FileDescriptors.Add(fileDescriptor);
             }

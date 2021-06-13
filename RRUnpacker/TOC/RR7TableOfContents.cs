@@ -7,11 +7,14 @@ using System.IO;
 
 using Syroot.BinaryData;
 
-namespace RRUnpacker.RR7.TOC
+namespace RRUnpacker.TOC
 {
     public record TOCInformation (int FileCount, int ContainerCount, int TOCOffset);
 
-    public class RR7TableOfContents
+    /// <summary>
+    /// TOC Within the main.self executable for RR7.
+    /// </summary>
+    public class RR7TableOfContents : ITableOfContents
     {
         public static Dictionary<string, TOCInformation> TOCInfos = new()
         {
@@ -24,8 +27,8 @@ namespace RRUnpacker.RR7.TOC
 
         public const int ELF_OFFSET_DIFF = 0xFB20000;
 
-        public List<RR7FileDescriptor> FileDescriptors = new();
-        public List<RR7ContainerDescriptor> ContainerDescriptors = new();
+        public List<RRFileDescriptor> FileDescriptors = new();
+        public List<RRContainerDescriptor> ContainerDescriptors = new();
 
         private string _elfPath;
 
@@ -48,11 +51,17 @@ namespace RRUnpacker.RR7.TOC
             ReadContainerDescriptors(bs);
         }
 
+        public List<RRFileDescriptor> GetFiles(string fileName)
+            => FileDescriptors;
+
+        public List<RRContainerDescriptor> GetContainers(string fileName)
+            => ContainerDescriptors;
+
         private void ReadContainerDescriptors(BinaryStream bs)
         {
             for (int i = 0; i < CurrentTOCInfo.ContainerCount; i++)
             {
-                RR7ContainerDescriptor desc = new RR7ContainerDescriptor();
+                RRContainerDescriptor desc = new RRContainerDescriptor();
 
                 uint nameOffset = bs.ReadUInt32();
                 using (var seek = bs.TemporarySeek(nameOffset - ELF_OFFSET_DIFF, SeekOrigin.Begin))
@@ -76,7 +85,7 @@ namespace RRUnpacker.RR7.TOC
         {
             for (int i = 0; i < CurrentTOCInfo.FileCount; i++)
             {
-                RR7FileDescriptor desc = new RR7FileDescriptor();
+                RRFileDescriptor desc = new RRFileDescriptor();
 
                 uint nameOffset = bs.ReadUInt32();
                 using (var seek = bs.TemporarySeek(nameOffset - ELF_OFFSET_DIFF, SeekOrigin.Begin))

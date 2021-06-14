@@ -2,11 +2,12 @@
 Ridge Racer PSP/6/7/PS Vita - .DAT unpacker
 
 Unpacks all files (including custom compressed ones) from .DAT files.
+**Only the supported versions listed below are extractable.**
 
 ## Ridge Racer 6
 Decrypted `default.xex` is required to extract RRM(2/3).DAT.
 
-Tested working with:
+Support for:
 * PAL Version
 
 ## Ridge Racer 7
@@ -23,5 +24,9 @@ Provide the info file linked to the .DAT file (usually next to the .DAT file).
 Support for:
 * `UCES00422` - Ridge Racer PSP Version 2
 
+## R:Racing Evolution
+Support for:
+* `SLES_52309` - PS2 PAL Version
+
 ## Download
-Download in [Releases](https://github.com/Nenkai/RR7Unpacker/releases).
+Download in [Releases](https://github.com/Nenkai/RRUnpacker/releases).

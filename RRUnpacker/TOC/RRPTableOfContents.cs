@@ -18,7 +18,7 @@ namespace RRUnpacker.TOC
         public const uint TOC_OFFSET = 0x1C754C;
 
         public const int ContainerCount = 1_651;
-        public const int FileCount = 4_097;
+        public const int FileCount = 4_247;
 
         public List<RRFileDescriptor> FileDescriptors = new();
         public List<RRContainerDescriptor> ContainerDescriptors = new();

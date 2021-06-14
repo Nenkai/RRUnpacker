@@ -12,14 +12,16 @@ namespace RRUnpacker
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("RRUnpacker for Ridge Racer PSP (V2), 6, 7, PS Vita by Nenkai#9075");
+            Console.WriteLine("RRUnpacker for Ridge Racer PSP(V2)/6/7/PSVita & R:Racing Evolution - by Nenkai#9075");
             Console.WriteLine();
 
-            Parser.Default.ParseArguments<RR7Verbs, RR6Verbs, RRNVerbs, RRPSPVerbs>(args)
+            Parser.Default.ParseArguments<RR7Verbs, RR6Verbs, RRNVerbs, RRPSPVerbs, RREVerbs>(args)
                 .WithParsed<RR7Verbs>(RR7Action)
                 .WithParsed<RR6Verbs>(RR6Action)
                 .WithParsed<RRPSPVerbs>(RRPSPAction)
-                .WithParsed<RRNVerbs>(RRNAction);    
+                .WithParsed<RRNVerbs>(RRNAction)
+                .WithParsed<RREVerbs>(RREAction);
+
         }
 
         public static void RR7Action(RR7Verbs options)
@@ -90,9 +92,9 @@ namespace RRUnpacker
 
         public static void RRPSPAction(RRPSPVerbs options)
         {
-            if (!File.Exists(options.InfoPath))
+            if (!File.Exists(options.ElfPath))
             {
-                Console.WriteLine($"Provided Info file '{options.InfoPath}' does not exist.");
+                Console.WriteLine($"Provided Elf file '{options.ElfPath}' does not exist.");
                 return;
             }
 
@@ -102,10 +104,32 @@ namespace RRUnpacker
                 return;
             }
 
-            var toc = new RRPTableOfContents(options.InfoPath);
+            var toc = new RRPTableOfContents(options.ElfPath);
             toc.Read();
 
             var unpacker = new RRUnpacker<RRPTableOfContents>(options.InputPath, options.OutputPath);
+            unpacker.SetToc(toc);
+            unpacker.ExtractContainers();
+        }
+
+        public static void RREAction(RREVerbs options)
+        {
+            if (!File.Exists(options.ElfPath))
+            {
+                Console.WriteLine($"Provided ELF file '{options.ElfPath}' does not exist.");
+                return;
+            }
+
+            if (!File.Exists(options.InputPath))
+            {
+                Console.WriteLine($"Provided .DAT file '{options.InputPath}' does not exist.");
+                return;
+            }
+
+            var toc = new RRETableOfContents(options.ElfPath);
+            toc.Read();
+
+            var unpacker = new RRUnpacker<RRETableOfContents>(options.InputPath, options.OutputPath);
             unpacker.SetToc(toc);
             unpacker.ExtractContainers();
         }
@@ -162,7 +186,20 @@ namespace RRUnpacker
         public string InputPath { get; set; }
 
         [Option('e', "elf-path", Required = true, HelpText = "Input .elf file that should already be decrypted. Example: BOOT.elf.")]
-        public string InfoPath { get; set; }
+        public string ElfPath { get; set; }
+
+        [Option('o', "output", Required = true, HelpText = "Output directory for the extracted files.")]
+        public string OutputPath { get; set; }
+    }
+
+    [Verb("rre", HelpText = "Unpacks .DAT files for R:Racing Evolution.")]
+    public class RREVerbs
+    {
+        [Option('i', "input", Required = true, HelpText = "Input .DAT file, should be RGC.DAT.")]
+        public string InputPath { get; set; }
+
+        [Option('e', "elf-path", Required = true, HelpText = "Input .elf file of the game. Example: SLES_523.09.")]
+        public string ElfPath { get; set; }
 
         [Option('o', "output", Required = true, HelpText = "Output directory for the extracted files.")]
         public string OutputPath { get; set; }

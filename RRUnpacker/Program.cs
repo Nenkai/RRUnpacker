@@ -60,12 +60,46 @@ namespace RRUnpacker
                 return;
             }
 
+            if (!CheckXEX(options.XexPath))
+                return;
+
             var toc = new RR6TableOfContents(options.XexPath);
             toc.Read();
 
             var unpacker = new RRUnpacker<RR6TableOfContents>(options.InputPath, options.OutputPath);
             unpacker.SetToc(toc);
             unpacker.ExtractContainers();
+        }
+
+        private static bool CheckXEX(string fileName)
+        {
+            var header = XEX2Header.Read(fileName);
+            if (header is null)
+            {
+                Console.WriteLine($"Could not read XEX header, xex file provided does not seem to be a Xbox 360 Executable (XEX).");
+                return false;
+            }
+
+            XEX2OptHeader fileDataDescriptor = header.GetImageHeaderInfoByKey(XEX2ImageKeyType.FileDataDescriptor);
+            if (fileDataDescriptor is null || fileDataDescriptor.Value is not XEX2FileDataDescriptor fd)
+            {
+                Console.WriteLine($"Possibly corrupted XEX file, xex provided does not have a file data descriptor.");
+                return false;
+            }
+
+            if (fd.EncryptionType == XEX2EncryptionType.Encrypted)
+            {
+                Console.WriteLine($"XEX file is encrypted. Decrypt it with XeXTool first.");
+                return false;
+            }
+
+            if (fd.CompressionType == XEX2CompressionType.Compressed)
+            {
+                Console.WriteLine($"XEX file is compressed. Decompress it with XeXTool first.");
+                return false;
+            }
+
+            return true;
         }
 
         public static void RRNAction(RRNVerbs options)

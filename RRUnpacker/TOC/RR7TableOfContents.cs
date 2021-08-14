@@ -9,7 +9,7 @@ using Syroot.BinaryData;
 
 namespace RRUnpacker.TOC
 {
-    public record TOCInformation (int FileCount, int ContainerCount, int TOCOffset);
+    public record TOCInformation (int FileCount, int ContainerCount, int TOCOffset, long ELFOffsetDiff);
 
     /// <summary>
     /// TOC Within the main.self executable for RR7.
@@ -18,14 +18,13 @@ namespace RRUnpacker.TOC
     {
         public static Dictionary<string, TOCInformation> TOCInfos = new()
         {
-            { "NPUB30457", new TOCInformation(2_088, 12_810, 0x620128) },
-            { "NPEB00513", new TOCInformation(2_139, 13_313, 0x630128) },
+            { "NPUB30457", new TOCInformation(12_810, 2_088, 0x620128, 0xFB30000) },
+            { "NPEB00513", new TOCInformation(13_313, 2_139, 0x630128, 0xFB20000) },
 
         };
 
         public TOCInformation CurrentTOCInfo { get; set; }
 
-        public const int ELF_OFFSET_DIFF = 0xFB20000;
 
         public List<RRFileDescriptor> FileDescriptors = new();
         public List<RRContainerDescriptor> ContainerDescriptors = new();
@@ -64,7 +63,7 @@ namespace RRUnpacker.TOC
                 RRContainerDescriptor desc = new RRContainerDescriptor();
 
                 uint nameOffset = bs.ReadUInt32();
-                using (var seek = bs.TemporarySeek(nameOffset - ELF_OFFSET_DIFF, SeekOrigin.Begin))
+                using (var seek = bs.TemporarySeek(nameOffset - CurrentTOCInfo.ELFOffsetDiff, SeekOrigin.Begin))
                     desc.Name = seek.Stream.ReadString(StringCoding.ZeroTerminated);
 
                 desc.SectorOffset = bs.ReadUInt32();
@@ -88,7 +87,7 @@ namespace RRUnpacker.TOC
                 RRFileDescriptor desc = new RRFileDescriptor();
 
                 uint nameOffset = bs.ReadUInt32();
-                using (var seek = bs.TemporarySeek(nameOffset - ELF_OFFSET_DIFF, SeekOrigin.Begin))
+                using (var seek = bs.TemporarySeek(nameOffset - CurrentTOCInfo.ELFOffsetDiff, SeekOrigin.Begin))
                     desc.Name = seek.Stream.ReadString(StringCoding.ZeroTerminated);
 
                 bs.Position += 8;

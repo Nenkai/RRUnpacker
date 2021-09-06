@@ -27,8 +27,11 @@ namespace RRUnpacker
             _datPath = datPath;
         }
 
-        public void Setup(string modFolder)
+        public void Patch(string modFolder)
         {
+            Console.WriteLine($"ELF Path to patch: {_elfPath}");
+            Console.WriteLine($"Target DAT file: {_datPath}");
+
             long test = 0;
             for (int i = 0; i < _ToC.ContainerDescriptors.Count; i++)
             {
@@ -50,8 +53,12 @@ namespace RRUnpacker
             }
 
             // Hardcoded DAT size, thank you bandai
+            Console.WriteLine($"Patching ELF Hardcoded DAT Size to {(ulong)_datStream.Length:X16}");
+
             _elfStream.Position = 0x620048;
             _elfStream.WriteUInt64((ulong)_datStream.Length, ByteConverter.Big);
+
+            Console.WriteLine("Done. Make sure to always back up your original elf file.");
         }
 
         private void ProcessFolder(string containerFolder, string modFolder)
@@ -85,13 +92,13 @@ namespace RRUnpacker
                     copy.Remove(file.Name);
                 else
                 {
-                    Console.WriteLine("Unexpected file");
+                    Console.WriteLine($"Error: Unexpected file {file.Name}");
                     return;
                 }
             }
             if (copy.Count != 0)
             {
-                Console.WriteLine("Mod folder does not match container");
+                Console.WriteLine($"Mod folder does not match all the files present in container '{container.Name}'");
                 return;
             }
 
@@ -118,6 +125,7 @@ namespace RRUnpacker
                 string file = modFilesOrdered[i];
                 RRFileDescriptor fileDescriptor = filesInContainer[i];
 
+                Console.WriteLine($"Patching ELF ToC Entry & Appending to DAT: {container.Name}/{fileDescriptor.Name}");
                 byte[] fileData = File.ReadAllBytes(file);
                 datStreamWriter.Write(fileData, 0, fileData.Length);
                 datStreamWriter.Align(RRConsts.BlockSize, grow: true);

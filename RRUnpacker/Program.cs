@@ -57,11 +57,17 @@ namespace RRUnpacker
                 return;
             }
 
+            if (!Directory.Exists(options.ModFolder))
+            {
+                Console.WriteLine($"Mod folder '{options.ModFolder}' does not exist.");
+                return;
+            }
+
             var toc = new RR7TableOfContents(options.GameCode, options.ElfPath);
             toc.Read();
 
             using RR7Patcher patcher = new RR7Patcher(toc, options.ElfPath, options.InputPath);
-            patcher.Setup(options.ModFolder);
+            patcher.Patch(options.ModFolder);
         }
 
         public static void RR6Action(RR6Verbs options)

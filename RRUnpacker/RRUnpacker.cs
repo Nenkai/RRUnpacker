@@ -12,9 +12,9 @@ using RRUnpacker.TOC;
 
 namespace RRUnpacker
 {
-	public class RRUnpacker<T> where T : ITableOfContents
+	public class RRUnpacker<TToC> where TToC : ITableOfContents
 	{
-		public T TOC { get; set; }
+		public TToC TOC { get; set; }
 
 		private string _outputPath;
 		private string _inputPath;
@@ -25,7 +25,7 @@ namespace RRUnpacker
 			_outputPath = outputPath;
 		}
 
-		public void SetToc(T toc)
+		public void SetToc(TToC toc)
         {
 			TOC = toc;
         }

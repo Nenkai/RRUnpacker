@@ -61,6 +61,7 @@ namespace RRUnpacker.TOC
             for (int i = 0; i < CurrentTOCInfo.ContainerCount; i++)
             {
                 RRContainerDescriptor desc = new RRContainerDescriptor();
+                desc.Offset = bs.Position;
 
                 uint nameOffset = bs.ReadUInt32();
                 using (var seek = bs.TemporarySeek(nameOffset - CurrentTOCInfo.ELFOffsetDiff, SeekOrigin.Begin))
@@ -85,6 +86,7 @@ namespace RRUnpacker.TOC
             for (int i = 0; i < CurrentTOCInfo.FileCount; i++)
             {
                 RRFileDescriptor desc = new RRFileDescriptor();
+                desc.Offset = bs.Position;
 
                 uint nameOffset = bs.ReadUInt32();
                 using (var seek = bs.TemporarySeek(nameOffset - CurrentTOCInfo.ELFOffsetDiff, SeekOrigin.Begin))

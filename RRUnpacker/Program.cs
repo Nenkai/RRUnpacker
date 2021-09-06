@@ -1,5 +1,7 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
+using System.Collections.Generic;
 
 using RRUnpacker.TOC;
 
@@ -15,8 +17,9 @@ namespace RRUnpacker
             Console.WriteLine("RRUnpacker for Ridge Racer PSP(V2)/6/7/PSVita & R:Racing Evolution - by Nenkai#9075");
             Console.WriteLine();
 
-            Parser.Default.ParseArguments<RR7Verbs, RR6Verbs, RRNVerbs, RRPSPVerbs, RREVerbs>(args)
+            Parser.Default.ParseArguments<RR7Verbs, RR7PackVerbs, RR6Verbs, RRNVerbs, RRPSPVerbs, RREVerbs>(args)
                 .WithParsed<RR7Verbs>(RR7Action)
+                .WithParsed<RR7PackVerbs>(RR7PackAction)
                 .WithParsed<RR6Verbs>(RR6Action)
                 .WithParsed<RRPSPVerbs>(RRPSPAction)
                 .WithParsed<RRNVerbs>(RRNAction)
@@ -44,6 +47,21 @@ namespace RRUnpacker
             var unpacker = new RRUnpacker<RR7TableOfContents>(options.InputPath, options.OutputPath);
             unpacker.SetToc(toc);
             unpacker.ExtractContainers();
+        }
+
+        public static void RR7PackAction(RR7PackVerbs options)
+        {
+            if (!File.Exists(options.ElfPath))
+            {
+                Console.WriteLine($"Provided ELF file '{options.ElfPath}' does not exist.");
+                return;
+            }
+
+            var toc = new RR7TableOfContents(options.GameCode, options.ElfPath);
+            toc.Read();
+
+            using RR7Patcher patcher = new RR7Patcher(toc, options.ElfPath, options.InputPath);
+            patcher.Setup(options.ModFolder);
         }
 
         public static void RR6Action(RR6Verbs options)
@@ -185,6 +203,22 @@ namespace RRUnpacker
 
         [Option('o', "output", Required = true, HelpText = "Output directory for the extracted files.")]
         public string OutputPath { get; set; }
+    }
+
+    [Verb("rr7pack")]
+    public class RR7PackVerbs
+    {
+        [Option('m', "mod-folder", Required = true, HelpText = "Input Mod folder")]
+        public string ModFolder { get; set; }
+
+        [Option('e', "elf-path", Required = true, HelpText = "Input .elf file that should already be decrypted. Example: main.elf.")]
+        public string ElfPath { get; set; }
+
+        [Option('g', "gamecode", Required = true, HelpText = "Game Code of the game. Example: NPEB00513")]
+        public string GameCode { get; set; }
+
+        [Option('i', Required = true, HelpText = "Input .DAT file like RR7.DAT.")]
+        public string InputPath { get; set; }
     }
 
     [Verb("rr6", HelpText = "Unpacks .DAT files for Ridge Racer 6 (X360).")]

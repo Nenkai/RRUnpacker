@@ -1,0 +1,85 @@
+//------------------------------------------------
+//--- 010 Editor v11.0.1 Binary Template
+//
+//      File: 
+//   Authors: 
+//   Version: 
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+// Constants need to be adjusted depending on game
+
+BigEndian();
+
+local int EXECUTABLE_DIFF_OFFSET = 0xFB30000;
+
+typedef struct 
+{
+    int RuntimeNameOffset <format=hex>;
+
+    local int cPos = FTell();
+    local int nameOffset = RuntimeNameOffset - EXECUTABLE_DIFF_OFFSET;
+    FSeek(nameOffset);
+    string Name;
+    FSeek(cPos);
+
+
+    int sectorOffset <format=hex>;
+    short sectorSize <format=hex>; // Shorts are ints for R:Racing
+    short unkFlag; // Shorts are ints for R:Racing
+    int FileSizeWithinContainer <format=hex>;
+    int OffsetWithinContainer <format=hex>;
+
+
+} FileDescriptor <optimize=false>;
+
+
+typedef struct 
+{
+    int RuntimeNameOffset <format=hex>;
+
+    local int cPos = FTell();
+    local int nameOffset = RuntimeNameOffset - EXECUTABLE_DIFF_OFFSET;
+    FSeek(nameOffset);
+    string Name;
+    FSeek(cPos);
+
+    
+    int sectorOffset <format=hex>;
+    short sectorsSize; // Shorts are ints for R:Racing
+    short FileDescriptorEntryIndexStart; // Shorts are ints for R:Racing
+    short FileDescriptorEntryIndexEnd <comment="Exclusive">; // Shorts are ints for R:Racing
+    short zip;
+
+    int compressedSize <format=hex>;
+    int rawUncompressedSize <format=hex>;
+    int rawUncompressedPaddingSizeMaybe <format=hex>;
+    int runtimeActualUncompressedFileOffset <comment="For non zipped files">;
+
+    byte unkBool;
+    byte pad[3];
+} ContainerDescriptor <optimize=false>;
+
+typedef struct (int size)
+{
+    ContainerDescriptor cd[size];
+} Containers;
+
+typedef struct (int size)
+{
+    FileDescriptor fd[size];
+;
+} Descriptors;
+
+struct RR7Containers
+{
+    FSeek(0x620128);
+    Descriptors descriptors(12810);
+    Containers rrm1conts(2088);
+    
+
+} dat;

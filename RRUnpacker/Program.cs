@@ -162,7 +162,7 @@ namespace RRUnpacker
                 return;
             }
 
-            var toc = new RRPTableOfContents(options.ElfPath);
+            var toc = new RRPTableOfContents(options.GameCode, options.ElfPath);
             toc.Read();
 
             var unpacker = new RRUnpacker<RRPTableOfContents>(options.InputPath, options.OutputPath);
@@ -261,6 +261,9 @@ namespace RRUnpacker
 
         [Option('e', "elf-path", Required = true, HelpText = "Input .elf file that should already be decrypted. Example: BOOT.elf.")]
         public string ElfPath { get; set; }
+
+        [Option('g', "gamecode", Required = true, HelpText = "Game Code of the game. Example: UCES00422")]
+        public string GameCode { get; set; }
 
         [Option('o', "output", Required = true, HelpText = "Output directory for the extracted files.")]
         public string OutputPath { get; set; }

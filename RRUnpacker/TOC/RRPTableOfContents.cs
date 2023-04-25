@@ -10,23 +10,31 @@ using Syroot.BinaryData;
 namespace RRUnpacker.TOC
 {
     /// <summary>
-    /// TOC Within the BOOT.bin executable for RR PSP (Version 2).
+    /// TOC Within the BOOT.bin executable for RR PSP (Version 1 and Version 2).
     /// </summary>
     public class RRPTableOfContents : ITableOfContents
     {
-        public const int ELF_OFFSET_DIFF = 0xC0;
-        public const uint TOC_OFFSET = 0x1C754C;
+        public static Dictionary<string, TOCInformation> TOCInfos = new()
+        {
+            { "UCES00422", new TOCInformation(4_247, 1_651, 0x1C754C, 0xC0) }, // Ridge Racer 2  (PAL)
+            { "ULJS00080", new TOCInformation(3_400, 1_487, 0x1C694C, 0xC0) }, // Ridge Racers 2 (JP)
+            { "ULJS00001", new TOCInformation(2_632, 0_716, 0x1B6914, 0x80) }, // Ridge Racers   (JP)
 
-        public const int ContainerCount = 1_651;
-        public const int FileCount = 4_247;
+        };
+
+        public TOCInformation CurrentTOCInfo { get; set; }
 
         public List<RRFileDescriptor> FileDescriptors = new();
         public List<RRContainerDescriptor> ContainerDescriptors = new();
 
         private string _elfPath;
 
-        public RRPTableOfContents(string elfPath)
+        public RRPTableOfContents(string gameCode, string elfPath)
         {
+            if (!TOCInfos.TryGetValue(gameCode, out TOCInformation toc))
+                throw new ArgumentException("Invalid or non-supported game code provided.");
+
+            CurrentTOCInfo = toc;
             _elfPath = elfPath;
         }
 
@@ -35,7 +43,7 @@ namespace RRUnpacker.TOC
             using var fs = new FileStream(_elfPath, FileMode.Open);
             using var bs = new BinaryStream(fs, ByteConverter.Little);
 
-            fs.Position = TOC_OFFSET;
+            fs.Position = CurrentTOCInfo.TOCOffset;
             ReadContainerDescriptors(bs);
             ReadFileDescriptors(bs);
         }
@@ -48,12 +56,12 @@ namespace RRUnpacker.TOC
 
         private void ReadContainerDescriptors(BinaryStream bs)
         {
-            for (int i = 0; i < ContainerCount; i++)
+            for (int i = 0; i < CurrentTOCInfo.ContainerCount; i++)
             {
                 RRContainerDescriptor desc = new RRContainerDescriptor();
 
                 uint nameOffset = bs.ReadUInt32();
-                using (var seek = bs.TemporarySeek(nameOffset + ELF_OFFSET_DIFF, SeekOrigin.Begin))
+                using (var seek = bs.TemporarySeek(nameOffset + CurrentTOCInfo.ELFOffsetDiff, SeekOrigin.Begin))
                     desc.Name = seek.Stream.ReadString(StringCoding.ZeroTerminated);
 
                 desc.SectorOffset = bs.ReadUInt32();
@@ -73,19 +81,19 @@ namespace RRUnpacker.TOC
 
         private void ReadFileDescriptors(BinaryStream bs)
         {
-            for (int i = 0; i < FileCount; i++)
+            for (int i = 0; i < CurrentTOCInfo.FileCount; i++)
             {
                 RRFileDescriptor desc = new RRFileDescriptor();
 
                 uint nameOffset = bs.ReadUInt32();
-                using (var seek = bs.TemporarySeek(nameOffset + ELF_OFFSET_DIFF, SeekOrigin.Begin))
+                using (var seek = bs.TemporarySeek(nameOffset + CurrentTOCInfo.ELFOffsetDiff, SeekOrigin.Begin))
                     desc.Name = seek.Stream.ReadString(StringCoding.ZeroTerminated);
 
                 bs.Position += 8;
                 desc.FileSizeWithinContainer = bs.ReadUInt32();
                 desc.OffsetWithinContainer = bs.ReadUInt32();
 
-                // Extra padding for RR PSP V2
+                // Extra padding for RR PSP
                 bs.Position += 4;
                 FileDescriptors.Add(desc);
             }

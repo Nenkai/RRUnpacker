@@ -9,7 +9,7 @@ using Syroot.BinaryData;
 
 namespace RRUnpacker.TOC
 {
-    public record TOCInformation (int FileCount, int ContainerCount, int TOCOffset, long ELFOffsetDiff);
+    public record TOCInformation (int FileCount, int ContainerCount, int TOCOffset, long ELFOffsetDiff, long DATSizeOffset = 0);
 
     /// <summary>
     /// TOC Within the main.self executable for RR7.
@@ -18,7 +18,7 @@ namespace RRUnpacker.TOC
     {
         public static Dictionary<string, TOCInformation> TOCInfos = new()
         {
-            { "NPUB30457", new TOCInformation(12_810, 2_088, 0x620128, 0xFB30000) },
+            { "NPUB30457", new TOCInformation(12_810, 2_088, 0x620128, 0xFB30000, 0x620048) },
             { "NPEB00513", new TOCInformation(13_313, 2_139, 0x630128, 0xFB20000) },
 
         };

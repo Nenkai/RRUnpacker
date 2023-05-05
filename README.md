@@ -21,6 +21,8 @@ Support for:
 Provide the info file linked to the .DAT file (usually next to the .DAT file).
 
 ## Ridge Racer PSP
+Needs a decrypted boot.bin file to use alongside the DAT file.
+
 Support for:
 * `UCES00422` - Ridge Racer PSP Version 2
 * `ULJS00080` - Ridge Racer PSP Version 2 (JP)

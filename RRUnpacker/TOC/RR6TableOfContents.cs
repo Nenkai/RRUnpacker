@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.IO;
 
 using Syroot.BinaryData;
+using RRUnpacker.Entities;
 
 namespace RRUnpacker.TOC
 {
@@ -97,7 +98,7 @@ namespace RRUnpacker.TOC
                 desc.SectorSize = bs.ReadUInt16();
                 desc.FileDescriptorEntryIndexStart = bs.ReadUInt16();
                 desc.FileDescriptorEntryIndexEnd = bs.ReadUInt16();
-                desc.Compressed = bs.ReadBoolean(BooleanCoding.Word);
+                desc.CompressionType = (RRCompressionType)bs.ReadUInt16();
                 desc.CompressedSize = bs.ReadUInt32();
                 desc.UncompressedSize = bs.ReadUInt32();
                 desc.PaddingSize = bs.ReadUInt32();

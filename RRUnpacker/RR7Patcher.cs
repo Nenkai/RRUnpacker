@@ -8,6 +8,7 @@ using System.IO;
 using Syroot.BinaryData;
 
 using RRUnpacker.TOC;
+using RRUnpacker.Entities;
 
 namespace RRUnpacker
 {
@@ -35,7 +36,7 @@ namespace RRUnpacker
             long test = 0;
             for (int i = 0; i < _ToC.ContainerDescriptors.Count; i++)
             {
-                if (_ToC.ContainerDescriptors[i].Compressed)
+                if (_ToC.ContainerDescriptors[i].CompressionType != RRCompressionType.None)
                     test += _ToC.ContainerDescriptors[i].UncompressedSize;
             }
 

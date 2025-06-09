@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.IO;
 
 using Syroot.BinaryData;
+using RRUnpacker.Entities;
 
 namespace RRUnpacker.TOC
 {
@@ -94,7 +95,7 @@ namespace RRUnpacker.TOC
                     continue;
                 }
 
-                if (!uint.TryParse(spl[5], out uint compressed))
+                if (!uint.TryParse(spl[5], out uint compressionType))
                 {
                     Console.WriteLine($"Skipping line '{str}', could not parse container compressed flag '{spl[5]}'.");
                     continue;
@@ -124,7 +125,7 @@ namespace RRUnpacker.TOC
                 containerDescriptor.SectorSize = sectorSize;
                 containerDescriptor.FileDescriptorEntryIndexStart = fileIndexStart;
                 containerDescriptor.FileDescriptorEntryIndexEnd = fileIndexEnd;
-                containerDescriptor.Compressed = compressed == 1;
+                containerDescriptor.CompressionType = (RRCompressionType)compressionType;
                 containerDescriptor.UncompressedSize = containerUncompressedSize;
                 containerDescriptor.CompressedSize = containerCompressedSize;
 

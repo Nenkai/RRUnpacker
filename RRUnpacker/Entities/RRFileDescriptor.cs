@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RRUnpacker
+namespace RRUnpacker.Entities
 {
     public class RRFileDescriptor
     {

@@ -11,16 +11,15 @@ using RRUnpacker.Entities;
 namespace RRUnpacker.TOC
 {
     /// <summary>
-    /// TOC Within the BOOT.bin executable for RR PSP (Version 1 and Version 2).
+    /// TOC Within the main.self executable for Go Vacation (NX).
     /// </summary>
-    public class RRPTableOfContents : ITableOfContents
+    public class GoVacationNXTableOfContents : ITableOfContents
     {
         public static Dictionary<string, TOCInformation> TOCInfos = new()
         {
-            { "UCES00422", new TOCInformation(4_247, 1_651, 0x1C754C, 0xC0) }, // Ridge Racer 2  (PAL)
-            { "ULJS00080", new TOCInformation(3_400, 1_487, 0x1C694C, 0xC0) }, // Ridge Racers 2 (JP)
-            { "ULJS00001", new TOCInformation(2_632, 0_716, 0x1B6914, 0x80) }, // Ridge Racers   (JP)
-
+            { "DISC.DAT", new TOCInformation(6000, 944, 0x5610F82, -0xD8, 0) }, // Allocated Limits: 6400, 1600?
+            { "RIZ.DAT", new TOCInformation(1466, 10, 0x56505CA, -0xD8, 0) }, // Allocated Limits: 2048, 10?
+            { "SHD.DAT", new TOCInformation(77, 9, 0x5686B8A, -0xD8, 0) } // Allocated Limits: 128, 10?
         };
 
         public TOCInformation CurrentTOCInfo { get; set; }
@@ -30,10 +29,11 @@ namespace RRUnpacker.TOC
 
         private string _elfPath;
 
-        public RRPTableOfContents(string gameCode, string elfPath)
+        public GoVacationNXTableOfContents(string inputPath, string elfPath)
         {
-            if (!TOCInfos.TryGetValue(gameCode, out TOCInformation toc))
-                throw new ArgumentException("Invalid or non-supported game code provided.");
+            string fileName = Path.GetFileName(inputPath);
+            if (!TOCInfos.TryGetValue(fileName, out TOCInformation? toc))
+                throw new ArgumentException("TOC for file was not found. Make sure that the file has not been renamed (i.e DISC.DAT/RIZ.DAT/SHD.DAT).");
 
             CurrentTOCInfo = toc;
             _elfPath = elfPath;
@@ -45,6 +45,8 @@ namespace RRUnpacker.TOC
             using var bs = new BinaryStream(fs, ByteConverter.Little);
 
             fs.Position = CurrentTOCInfo.TOCOffset;
+
+            // This time it's the other way around, containers are first
             ReadContainerDescriptors(bs);
             ReadFileDescriptors(bs);
         }
@@ -60,23 +62,23 @@ namespace RRUnpacker.TOC
             for (int i = 0; i < CurrentTOCInfo.ContainerCount; i++)
             {
                 RRContainerDescriptor desc = new RRContainerDescriptor();
+                desc.Offset = bs.Position;
 
-                uint nameOffset = bs.ReadUInt32();
-                using (var seek = bs.TemporarySeek(nameOffset + CurrentTOCInfo.ELFOffsetDiff, SeekOrigin.Begin))
+                long nameOffset = bs.ReadInt64();
+                using (var seek = bs.TemporarySeek(nameOffset - CurrentTOCInfo.ELFOffsetDiff, SeekOrigin.Begin))
                     desc.Name = seek.Stream.ReadString(StringCoding.ZeroTerminated);
 
                 desc.SectorOffset = bs.ReadUInt32();
-                desc.SectorSize = bs.ReadUInt16();
+                desc.SectorSize = bs.ReadUInt32();
                 desc.FileDescriptorEntryIndexStart = bs.ReadUInt16();
                 desc.FileDescriptorEntryIndexEnd = bs.ReadUInt16();
-                desc.CompressionType = (RRCompressionType)bs.ReadUInt16();
+                desc.CompressionType = (RRCompressionType)bs.ReadUInt32();
                 desc.CompressedSize = bs.ReadUInt32();
                 desc.UncompressedSize = bs.ReadUInt32();
                 desc.PaddingSize = bs.ReadUInt32();
 
                 ContainerDescriptors.Add(desc);
                 bs.Position += 8;
-
             }
         }
 
@@ -85,17 +87,20 @@ namespace RRUnpacker.TOC
             for (int i = 0; i < CurrentTOCInfo.FileCount; i++)
             {
                 RRFileDescriptor desc = new RRFileDescriptor();
+                desc.Offset = bs.Position;
 
-                uint nameOffset = bs.ReadUInt32();
-                using (var seek = bs.TemporarySeek(nameOffset + CurrentTOCInfo.ELFOffsetDiff, SeekOrigin.Begin))
+                long nameOffset = bs.ReadInt64();
+                using (var seek = bs.TemporarySeek(nameOffset - CurrentTOCInfo.ELFOffsetDiff, SeekOrigin.Begin))
                     desc.Name = seek.Stream.ReadString(StringCoding.ZeroTerminated);
 
-                bs.Position += 8;
+                // TODO.
+                bs.ReadUInt32(); // int - global SectorOffset? basically when all assets are decompressed?
+                bs.ReadUInt32(); // int - NumSectors?
+                bs.ReadUInt32(); // int - alignment?
                 desc.FileSizeWithinContainer = bs.ReadUInt32();
                 desc.OffsetWithinContainer = bs.ReadUInt32();
-
-                // Extra padding for RR PSP
                 bs.Position += 4;
+
                 FileDescriptors.Add(desc);
             }
         }

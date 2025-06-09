@@ -1,5 +1,5 @@
 # RRUnpacker
-Ridge Racer PSP/6/7/PS Vita - .DAT unpacker
+Ridge Racer PSP/6/7/PS Vita & Go Vacation - .DAT unpacker
 
 Unpacks all files (including custom compressed ones) from .DAT files.
 **Only the supported versions listed below are extractable.**
@@ -31,6 +31,12 @@ Support for:
 ## R:Racing Evolution
 Support for:
 * `SLES_52309` - PS2 PAL Version
+
+## Go Vacation (Switch)
+Support for:
+* `0100C1800A9B6000`
+
+Make sure to convert `main` to `main.elf` first. Use [nx2elf2nso](https://archive.org/download/nx2elf2nso/nx2elf2nso.zip).
 
 ## Download
 Download in [Releases](https://github.com/Nenkai/RRUnpacker/releases).

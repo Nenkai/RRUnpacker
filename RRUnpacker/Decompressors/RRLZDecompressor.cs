@@ -7,9 +7,9 @@ using System.IO;
 
 using Syroot.BinaryData;
 
-namespace RRUnpacker
+namespace RRUnpacker.Decompressors
 {
-    public static class RRDecompressor
+    public static class RRLZDecompressor
     {
 		/// <summary>
 		/// Ridge Racer 7 Decompression Algo
@@ -36,7 +36,7 @@ namespace RRUnpacker
 				byte b1 = inputStream.Read1Byte();
 				byte b2 = inputStream.Read1Byte();
 
-				uint val = (uint)((b2 << 8) | b1);
+				uint val = (uint)(b2 << 8 | b1);
 				if (val < 0xFF00)
 				{
 					int size = (b1 & 0x1f) + 0x3;

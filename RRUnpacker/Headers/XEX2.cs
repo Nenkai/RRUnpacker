@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System.IO;
 using Syroot.BinaryData;
 
-namespace RRUnpacker
+namespace RRUnpacker.Headers
 {
     // Base Info from https://github.com/emoose/xbox-reversing/ and https://github.com/xenia-project/xenia/blob/HEAD/src/xenia/kernel/util/xex2_info.h
     // Full credits to respective authors
@@ -44,7 +44,7 @@ namespace RRUnpacker
             header.SecurityOffset = bs.ReadUInt32();
             header.HeaderCount = bs.ReadUInt32();
 
-            if (fs.Length < header.HeaderSize + (header.HeaderCount * 8))
+            if (fs.Length < header.HeaderSize + header.HeaderCount * 8)
                 return null; // Corrupt?
 
             header.Headers = new XEX2OptHeader[header.HeaderCount];

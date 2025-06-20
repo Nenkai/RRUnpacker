@@ -15,19 +15,24 @@ namespace RRUnpacker;
 
 class Program
 {
-    public const string Version = "2.1.0";
+    public const string Version = "2.2.0";
 
     static void Main(string[] args)
     {
         Console.WriteLine("-----------------------------------------");
-        Console.WriteLine($"- RRUnpacker {Version} for Ridge Racer PSP/6/7/PSVita, R:Racing, Go Vacation by Nenkai");
+        Console.WriteLine($"- RRUnpacker {Version} by Nenkai -");
+        Console.WriteLine("- Ridge Racer PSP/6/7/PSVita");
+        Console.WriteLine("- R:Racing Evolution (PS2)");
+        Console.WriteLine("- Go Vacation (Wii/Nintendo Switch)");
+        Console.WriteLine("- We Ski (Wii)");
+        Console.WriteLine("- We Ski & Snowboard (Wii)");
         Console.WriteLine("-----------------------------------------");
         Console.WriteLine("- https://github.com/Nenkai");
         Console.WriteLine("- https://twitter.com/Nenkaai");
         Console.WriteLine("-----------------------------------------");
         Console.WriteLine("");
 
-        Parser.Default.ParseArguments<RR7Verbs, RR7PackVerbs, RR6Verbs, RRNVerbs, RRPSPVerbs, RREVerbs, GoVacationVerbs, WeSkiAndSnowboardVerbs,
+        Parser.Default.ParseArguments<RR7Verbs, RR7PackVerbs, RR6Verbs, RRNVerbs, RRPSPVerbs, RREVerbs, GoVacationVerbs, GoVacationSwitchVerbs, WeSkiAndSnowboardVerbs,
             ExportDbVerbs, ImportDbVerbs,
             DecompressVerbs>(args)
             .WithParsed<RR7Verbs>(RR7Action)
@@ -520,7 +525,7 @@ class Program
         public required string OutputPath { get; set; }
     }
 
-    [Verb("rr7pack")]
+    [Verb("rr7pack", HelpText = "Appends modded files to a .DAT file (and updates the elf executable).")]
     public class RR7PackVerbs
     {
         [Option('m', "mod-folder", Required = true, HelpText = "Input Mod folder")]
@@ -604,7 +609,7 @@ class Program
         public string? OutputPath { get; set; }
     }
 
-    [Verb("gv-switch", HelpText = "Unpacks .DAT files for Go Vacation (Switch).")]
+    [Verb("gv-switch", HelpText = "Unpacks .DAT files for Go Vacation (Nintendo Switch).")]
     public class GoVacationSwitchVerbs
     {
         [Option('i', "input", Required = true, HelpText = "Input .DAT file like DISC.DAT.")]
@@ -617,7 +622,7 @@ class Program
         public string? OutputPath { get; set; }
     }
 
-    [Verb("wgas", HelpText = "Unpacks .DAT files for We Ski & Snowboard.")]
+    [Verb("weski", HelpText = "Unpacks .DAT files for We Ski / We Ski & Snowboard.")]
     public class WeSkiAndSnowboardVerbs
     {
         [Option('i', "input", Required = true, HelpText = "Input .DAT file like SKI.DAT.")]

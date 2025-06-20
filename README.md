@@ -2,7 +2,14 @@
 Ridge Racer PSP/6/7/PS Vita & Go Vacation - .DAT unpacker
 
 Unpacks all files (including custom compressed ones) from .DAT files.
-**Only the supported versions listed below are extractable.**
+
+> [!NOTE]  
+>  ### **Only the supported versions listed below are extractable.**
+>
+> The table of contents for every game (except RR PS Vita) is directly embedded in the executables.
+> 
+> In the wii games such as Go Vacation, they're embedded in RSO modules which are located in BIN000.DAT.
+
 
 ## Ridge Racer 6
 Decrypted `default.xex` is required to extract RRM(2/3).DAT.
@@ -32,9 +39,18 @@ Support for:
 Support for:
 * `SLES_52309` - PS2 PAL Version
 
-## Go Vacation (Switch)
+## Go Vacation
+
 Support for:
-* `0100C1800A9B6000`
+* `0100C1800A9B6000` (Switch Version)
+* Wii (Europe - `SGVPAF`)
+* Wii Prototype (US - `SGVPAF`)
+
+# We Ski (Wii)
+Only prototype versions currently.
+
+* We Ski & Snowboard Prototype
+* We Ski Prototype
 
 Make sure to convert `main` to `main.elf` first. Use [nx2elf2nso](https://archive.org/download/nx2elf2nso/nx2elf2nso.zip).
 

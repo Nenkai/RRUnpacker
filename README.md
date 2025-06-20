@@ -8,7 +8,7 @@ Unpacks all files (including custom compressed ones) from .DAT files.
 >
 > The table of contents for every game (except RR PS Vita) is directly embedded in the executables. It is a lengthy process to support manually.
 > 
-> In the wii games such as Go Vacation, they're embedded in RSO modules which are located in BIN000.DAT (U8 archive, then every module is compressed with the RRLZ compression wrapped in a 0x5A3F2E00 header.
+> In the wii games such as Go Vacation, they're embedded in RSO modules which are located in BIN000.DAT (U8 archive, then every module is compressed with the RRLZ compression wrapped in a `0x5A3F2E00` / `5A 3F 2E 00` header.
 
 
 ## Ridge Racer 6

@@ -4,10 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RRUnpacker
+namespace RRUnpacker;
+
+public static class RRConsts
 {
-    public static class RRConsts
-    {
-        public const int BlockSize = 0x800;
-    }
+    public const int BlockSize = 0x800;
 }

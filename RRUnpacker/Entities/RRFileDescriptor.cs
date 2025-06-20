@@ -4,19 +4,18 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RRUnpacker.Entities
+namespace RRUnpacker.Entities;
+
+public class RRFileDescriptor
 {
-    public class RRFileDescriptor
+    public long Offset { get; set; }
+
+    public string Name { get; set; }
+    public uint OffsetWithinContainer { get; set; }
+    public uint FileSizeWithinContainer { get; set; }
+
+    public override string ToString()
     {
-        public long Offset { get; set; }
-
-        public string Name { get; set; }
-        public uint OffsetWithinContainer { get; set; }
-        public uint FileSizeWithinContainer { get; set; }
-
-        public override string ToString()
-        {
-            return $"{Name} | ContainerOffset: {OffsetWithinContainer:X8} | Size: {FileSizeWithinContainer:X8}";
-        }
+        return $"{Name} | ContainerOffset: {OffsetWithinContainer:X8} | Size: {FileSizeWithinContainer:X8}";
     }
 }

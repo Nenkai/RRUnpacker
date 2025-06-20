@@ -6,14 +6,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RRUnpacker.TOC
+namespace RRUnpacker.TOC;
+
+public interface ITableOfContents
 {
-    public interface ITableOfContents
-    {
-        public void Read();
+    public void Read();
 
-        public List<RRContainerDescriptor> GetContainers(string fileName);
+    public List<RRContainerDescriptor> GetContainers(string fileName);
 
-        public List<RRFileDescriptor> GetFiles(string fileName);
-    }
+    public List<RRFileDescriptor> GetFiles(string fileName);
 }

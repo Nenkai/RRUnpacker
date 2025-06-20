@@ -16,109 +16,113 @@ using RRUnpacker.TOC;
 using RRUnpacker.Decompressors;
 using RRUnpacker.Entities;
 
-namespace RRUnpacker
+namespace RRUnpacker;
+
+public class RRUnpacker<TToC> where TToC : ITableOfContents
 {
-	public class RRUnpacker<TToC> where TToC : ITableOfContents
+	public TToC TOC { get; set; }
+
+	private string _outputPath;
+	private string _inputPath;
+
+	public RRUnpacker(string inputPath, string outputPath)
 	{
-		public TToC TOC { get; set; }
+		_inputPath = inputPath;
+		_outputPath = outputPath;
+	}
 
-		private string _outputPath;
-		private string _inputPath;
+	public void SetToc(TToC toc)
+	{
+		TOC = toc;
+	}
 
-		public RRUnpacker(string inputPath, string outputPath)
+	public void ExtractContainers()
+	{
+		Console.WriteLine("Starting to unpack..");
+
+		using var fs = File.Open(_inputPath, FileMode.Open);
+		Directory.CreateDirectory(_outputPath);
+
+		int i = 0;
+
+		string fileName = Path.GetFileNameWithoutExtension(_inputPath);
+		List<RRContainerDescriptor> containerInfo = TOC.GetContainers(fileName);
+		List<RRFileDescriptor> fileInfo = TOC.GetFiles(fileName);
+
+		foreach (var container in containerInfo)
 		{
-			_inputPath = inputPath;
-			_outputPath = outputPath;
-		}
+			string containerDir = Path.Combine(_outputPath, container.Name);
+			Directory.CreateDirectory(containerDir);
 
-		public void SetToc(TToC toc)
-        {
-			TOC = toc;
-        }
+            long containerOffset = container.SectorOffset * RRConsts.BlockSize;
+            fs.Position = containerOffset;
 
-		public void ExtractContainers()
-		{
-			Console.WriteLine("Starting to unpack..");
+			// Grab container data
+			MemoryOwner<byte> containerData;
 
-			using var fs = File.Open(_inputPath, FileMode.Open);
-			Directory.CreateDirectory(_outputPath);
-
-			int i = 0;
-
-			string fileName = Path.GetFileNameWithoutExtension(_inputPath);
-			List<RRContainerDescriptor> containerInfo = TOC.GetContainers(fileName);
-			List<RRFileDescriptor> fileInfo = TOC.GetFiles(fileName);
-
-			foreach (var container in containerInfo)
+            if (container.CompressionType != RRCompressionType.None)
 			{
-				string containerDir = Path.Combine(_outputPath, container.Name);
-				Directory.CreateDirectory(containerDir);
+                Console.WriteLine($"[{i + 1}/{containerInfo.Count}] {container.Name} [{container.CompressionType}] @ 0x{containerOffset:X}, {container.CompressionType}, compSize: 0x{container.CompressedSize:X}, decSize: 0x{container.UncompressedSize:X}");
 
-				Console.WriteLine($"[{i + 1}/{containerInfo.Count}] {container.Name}");
+                long compOff = RRConsts.BlockSize - (container.CompressedSize % RRConsts.BlockSize);
+				fs.Position += compOff;
 
-				// Grab container data
-				MemoryOwner<byte> containerData;
-				if (container.CompressionType != RRCompressionType.None)
+				containerData = MemoryOwner<byte>.Allocate((int)container.UncompressedSize);
+
+				switch (container.CompressionType)
 				{
-					fs.Position = (long)container.SectorOffset * RRConsts.BlockSize;
-					long compOff = RRConsts.BlockSize - (container.CompressedSize % RRConsts.BlockSize);
-					fs.Position += compOff;
+					case RRCompressionType.RRLZ:
+						RRLZDecompressor.Decompress(fs, container.CompressedSize, containerData.Span, container.UncompressedSize);
+						break;
 
-					containerData = MemoryOwner<byte>.Allocate((int)container.UncompressedSize);
+					case RRCompressionType.Zlib:
+						{
+							using MemoryOwner<byte> compressedSpan = MemoryOwner<byte>.Allocate((int)container.CompressedSize);
+							fs.ReadExactly(compressedSpan.Span);
 
-                    switch (container.CompressionType)
-					{
-						case RRCompressionType.RRLZ:
-                            RRLZDecompressor.Decompress(fs, container.CompressedSize, containerData.Span, container.UncompressedSize);
-							break;
-
-						case RRCompressionType.Zlib:
-							{
-								using MemoryOwner<byte> compressedSpan = MemoryOwner<byte>.Allocate((int)container.CompressedSize);
-								fs.ReadExactly(compressedSpan.Span);
-
-								using var memStream = compressedSpan.AsStream();
-								ZLibStream zlibStream = new ZLibStream(memStream, CompressionMode.Decompress);
-								zlibStream.ReadExactly(containerData.Span);
-							}
-							break;
-                    }
-					
+							using var memStream = compressedSpan.AsStream();
+							ZLibStream zlibStream = new ZLibStream(memStream, CompressionMode.Decompress);
+							zlibStream.ReadExactly(containerData.Span);
+						}
+						break;
 				}
-				else
-				{
-					uint containerSize = container.SectorSize * RRConsts.BlockSize;
-					fs.Position = (long)container.SectorOffset * RRConsts.BlockSize;
+				
+			}
+			else
+			{
+                uint containerSize = container.SectorSize * RRConsts.BlockSize;
+				fs.Position = (long)container.SectorOffset * RRConsts.BlockSize;
 
-					containerData = MemoryOwner<byte>.Allocate((int)containerSize);
-					fs.ReadExactly(containerData.Span);
-				}
+                Console.WriteLine($"[{i + 1}/{containerInfo.Count}] {container.Name} @ raw 0x{containerOffset:X}, size: 0x{containerSize:X}");
 
-				using var ms = containerData.AsStream();
-				using var bs = new BinaryStream(ms);
-
-				// Extract files
-				for (int index = container.FileDescriptorEntryIndexStart; index < container.FileDescriptorEntryIndexEnd; index++)
-				{
-					RRFileDescriptor file = fileInfo[index];
-					Console.WriteLine($"- {container.Name} -> {file.Name}");
-
-					bs.Position = file.OffsetWithinContainer;
-
-					using MemoryOwner<byte> outputFileData = MemoryOwner<byte>.Allocate((int)file.FileSizeWithinContainer);
-					bs.ReadExactly(outputFileData.Span);
-
-					string outputFileName = Path.Combine(containerDir, file.Name);
-					Directory.CreateDirectory(Path.GetDirectoryName(outputFileName)!);
-
-                    File.WriteAllBytes(outputFileName, outputFileData.Span);
-				}
-
-				containerData.Dispose();
-				i++;
+                containerData = MemoryOwner<byte>.Allocate((int)containerSize);
+				fs.ReadExactly(containerData.Span);
 			}
 
-			Console.WriteLine($"Done. Files have been extracted at: {_outputPath}");
+			using var ms = containerData.AsStream();
+			using var bs = new BinaryStream(ms);
+
+			// Extract files
+			for (int index = container.FileDescriptorEntryIndexStart; index < container.FileDescriptorEntryIndexEnd; index++)
+			{
+				RRFileDescriptor file = fileInfo[index];
+				Console.WriteLine($"- {container.Name} @ 0x{containerOffset:X}[0x{file.OffsetWithinContainer:X}..0x{file.OffsetWithinContainer+file.FileSizeWithinContainer:X}] -> {file.Name}");
+
+				bs.Position = file.OffsetWithinContainer;
+
+				using MemoryOwner<byte> outputFileData = MemoryOwner<byte>.Allocate((int)file.FileSizeWithinContainer);
+				bs.ReadExactly(outputFileData.Span);
+
+				string outputFileName = Path.Combine(containerDir, file.Name);
+				Directory.CreateDirectory(Path.GetDirectoryName(outputFileName)!);
+
+                File.WriteAllBytes(outputFileName, outputFileData.Span);
+			}
+
+			containerData.Dispose();
+			i++;
 		}
+
+		Console.WriteLine($"Done. Files have been extracted at: {_outputPath}");
 	}
 }

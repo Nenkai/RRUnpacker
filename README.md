@@ -6,7 +6,7 @@ Unpacks all files (including custom compressed ones) from .DAT files.
 > [!NOTE]  
 >  ### **Only the supported versions listed below are extractable.**
 >
-> The table of contents for every game (except RR PS Vita) is directly embedded in the executables.
+> The table of contents for every game (except RR PS Vita) is directly embedded in the executables. It is a lengthy process to support manually.
 > 
 > In the wii games such as Go Vacation, they're embedded in RSO modules which are located in BIN000.DAT.
 

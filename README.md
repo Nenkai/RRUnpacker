@@ -46,7 +46,7 @@ Support for:
 * Wii (Europe - `SGVPAF`)
 * Wii Prototype (US - `SGVPAF`)
 
-# We Ski (Wii)
+## We Ski (Wii)
 Only prototype versions currently.
 
 * We Ski & Snowboard Prototype

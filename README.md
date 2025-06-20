@@ -42,7 +42,7 @@ Support for:
 ## Go Vacation
 
 Support for:
-* `0100C1800A9B6000` (Switch Version)
+* `0100C1800A9B6000` (Switch Version) (Make sure to convert `main` to `main.elf` first. Use [nx2elf2nso](https://archive.org/download/nx2elf2nso/nx2elf2nso.zip)
 * Wii (Europe - `SGVPAF`)
 * Wii Prototype (US - `SGVPAF`)
 
@@ -51,8 +51,6 @@ Only prototype versions currently.
 
 * We Ski & Snowboard Prototype
 * We Ski Prototype
-
-Make sure to convert `main` to `main.elf` first. Use [nx2elf2nso](https://archive.org/download/nx2elf2nso/nx2elf2nso.zip).
 
 ## Download
 Download in [Releases](https://github.com/Nenkai/RRUnpacker/releases).

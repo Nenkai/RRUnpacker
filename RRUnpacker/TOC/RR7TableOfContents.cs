@@ -33,7 +33,7 @@ public class RR7TableOfContents : ITableOfContents
 
     public RR7TableOfContents(string gameCode, string elfPath)
     {
-        if (!TOCInfos.TryGetValue(gameCode, out TOCInformation toc))
+        if (!TOCInfos.TryGetValue(gameCode, out TOCInformation? toc))
             throw new ArgumentException("Invalid or non-supported game code provided.");
 
         CurrentTOCInfo = toc;

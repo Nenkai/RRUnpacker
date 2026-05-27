@@ -14,16 +14,22 @@ namespace RRUnpacker.TOC;
 public record TOCInformation2(string FileName, int ContainerCount, uint ContainersTocVirtualOffset, int FileCount, uint FilesTocVirtualOffset, uint DatSize);
 
 /// <summary>
-/// TOC Within the main.self executable for Go Vacation (NX).
+/// TOC Within the main.dol executable.
 /// </summary>
 public class WeSkiAndSnowboardTableOfContents : ITableOfContents
 {
     public static List<TOCInformation2> TOCInfos =
     [
-        // We Ski & Snowboard (Prototype) - RYKEAF - dol date 8/19/2008 5:34:00 PM
+        // We Ski & Snowboard (Prototype) - RYKEAF
+        // We Ski & Snowboard (USA) (Beta) - RYKEAF
         new TOCInformation2("SKI.DAT", 359, 0x802ed9a0, 2619, 0x802f1560, 0x2B67E000), // Allocated Limits: 12888, 1536?
 
-        // We Ski (Prototype) - RSQEAF - dol date 12/10/2007 3:37:00 PM
+        // We Ski & Snowboard (USA) - RYKEAF
+        new TOCInformation2("SKI.DAT", 359, 0x802eda60, 2619, 0x802f1620, 0x2B65F800),
+
+        // We Ski (Prototype) - RSQEAF
+        // We Ski (USA) (Beta) - RSQEAF
+        // We Ski (USA) - RSQEAF
         new TOCInformation2("SKI.DAT", 235, 0x802c0560, 1562, 0x802c2db0, 0x16FBF000), // Allocated Limits: 12888, 1536?
     ];
 

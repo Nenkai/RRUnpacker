@@ -1,4 +1,7 @@
-﻿using RRUnpacker.Entities;
+﻿// Copyright (c) 2026 Nenkai
+// SPDX-License-Identifier: MIT
+
+using RRUnpacker.Entities;
 
 using System;
 using System.Collections.Generic;

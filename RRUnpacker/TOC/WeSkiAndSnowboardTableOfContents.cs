@@ -14,7 +14,7 @@ namespace RRUnpacker.TOC;
 public record TOCInformation2(string FileName, int ContainerCount, uint ContainersTocVirtualOffset, int FileCount, uint FilesTocVirtualOffset, uint DatSize);
 
 /// <summary>
-/// TOC Within the main.self executable for Go Vacation (NX).
+/// TOC Within the main.dol executable.
 /// </summary>
 public class WeSkiAndSnowboardTableOfContents : ITableOfContents
 {

@@ -1,23 +1,24 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.CommandLine;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Collections.Generic;
+using System.Threading.Tasks;
 
-using RRUnpacker.TOC;
 using RR.Files.Database;
 
-using CommandLine;
-using CommandLine.Text;
-using RRUnpacker.Headers;
 using RRUnpacker.Decompressors;
+using RRUnpacker.Headers;
+using RRUnpacker.TOC;
 
 namespace RRUnpacker;
 
 class Program
 {
-    public const string Version = "2.2.0";
+    public const string Version = "2.3.0";
 
-    static void Main(string[] args)
+    static async Task<int> Main(string[] args)
     {
         Console.WriteLine("-----------------------------------------");
         Console.WriteLine($"- RRUnpacker {Version} by Nenkai -");
@@ -32,120 +33,187 @@ class Program
         Console.WriteLine("-----------------------------------------");
         Console.WriteLine("");
 
-        Parser.Default.ParseArguments<RR7Verbs, RR7PackVerbs, RR6Verbs, RRNVerbs, RRPSPVerbs, RREVerbs, GoVacationVerbs, GoVacationSwitchVerbs, WeSkiAndSnowboardVerbs,
-            ExportDbVerbs, ImportDbVerbs,
-            DecompressVerbs>(args)
-            .WithParsed<RR7Verbs>(RR7Action)
-            .WithParsed<RR7PackVerbs>(RR7PackAction)
-            .WithParsed<RR6Verbs>(RR6Action)
-            .WithParsed<RRPSPVerbs>(RRPSPAction)
-            .WithParsed<RRNVerbs>(RRNAction)
-            .WithParsed<RREVerbs>(RREAction)
-            .WithParsed<GoVacationVerbs>(GoVacationAction)
-            .WithParsed<GoVacationSwitchVerbs>(GoVacationSwitchAction)
-            .WithParsed<WeSkiAndSnowboardVerbs>(WeSkiAndSnowboardVerbsAction)
+        ///////////////////////////////////////
+        ///            EXTRACTORS            //
+        ///////////////////////////////////////
+        var rr7Command = new Command("rr7", "Unpacks .DAT files for Ridge Racer 7 (PS3).")
+        {
+            new Option<FileInfo>("--input", aliases: ["-i"]) { Required = true, Description = "Input .DAT file like RR7.DAT."},
+            new Option<FileInfo>("--elf-path", aliases: ["-e"]) { Required = true, Description = "Input .elf file that should already be decrypted. Example: main.elf."},
+            new Option<string>("--gamecode", aliases: ["-g"]) { Required = true, Description = "Game Code of the game. Example: NPEB00513"},
+            new Option<string>("--output", aliases: ["-o"]) { Description = "Output directory for the extracted files."}
+        };
+        rr7Command.SetAction(RR7Action);
 
-            .WithParsed<ExportDbVerbs>(ExportDb)
+        var rr7PackCommand = new Command("rr7pack", "Appends modded files to a .DAT file (and updates the elf executable).")
+        {
+            new Option<string>("--mod-folder", aliases: ["-m"]) { Required = true, Description = "Input Mod folder"},
+            new Option<FileInfo>("--elf-path", aliases: ["-e"]) { Required = true, Description = "Input .elf file that should already be decrypted. Example: main.elf."},
+            new Option<string>("--gamecode", aliases: ["-g"]) { Required = true, Description = "Game Code of the game. Example: NPEB00513"},
+            new Option<string?>("--input", aliases: ["-i"]) { Required = true, Description = "Input .DAT file like RR7.DAT."}
+        };
+        rr7PackCommand.SetAction(RR7PackAction);
 
-            .WithParsed<DecompressVerbs>(DecompressAction);
-            //.WithParsed<ImportDbVerbs>(ImportDb);
+        var rr6Command = new Command("rr6", "Unpacks .DAT files for Ridge Racer 6 (X360).")
+        {
+            new Option<FileInfo>("--input", aliases: ["-i"]) { Required = true, Description = "Input .DAT file like RRM.DAT/RRM2.DAT/RRM3.DAT."},
+            new Option<FileInfo>("--xex-path", aliases: ["-x"]) { Required = true, Description = "Input .xex file. MUST be decrypted through XeXTool."},
+            new Option<string>("--output", aliases: ["-o"]) { Description = "Output directory for the extracted files."}
+        };
+        rr6Command.SetAction(RR6Action);
+
+        var rrnCommand = new Command("rrn", "Unpacks .DAT files for Ridge Racer (PS Vita).")
+        {
+            new Option<FileInfo>("--input", aliases: ["-i"]) { Required = true, Description = "Input .DAT file like RRN.DAT."},
+            new Option<FileInfo>("--info") { Required = true, Description = "Input .info linked to the .dat file which should be next to it."},
+            new Option<string>("--output", aliases: ["-o"]) { Description = "Output directory for the extracted files."}
+        };
+        rrnCommand.SetAction(RRNAction);
+
+        var rrpspCommand = new Command("rrpsp", "Unpacks .DAT files for Ridge Racer Version 2 (PSP).")
+        {
+            new Option<FileInfo>("--input", aliases: ["-i"]) { Required = true, Description = "Input .DAT file like RRP.DAT."},
+            new Option<FileInfo>("--elf-path", aliases: ["-e"]) { Required = true, Description = "Input .elf file that should already be decrypted. Example: BOOT.elf."},
+            new Option<string>("--gamecode", aliases: ["-g"]) { Required = true, Description = "Game Code of the game. Example: UCES00422"},
+            new Option<string>("--output", aliases: ["-o"]) { Description = "Output directory for the extracted files."}
+        };
+        rrpspCommand.SetAction(RRPSPAction);
+
+        var rreCommand = new Command("rre", "Unpacks .DAT files for R:Racing Evolution.")
+        {
+            new Option<FileInfo>("--input", aliases: ["-i"]) { Required = true, Description = "Input .DAT file, should be RGC.DAT."},
+            new Option<FileInfo>("--elf-path", aliases: ["-e"]) { Required = true, Description =  "Input .elf file of the game. Example: SLES_523.09."},
+            new Option<string>("--output", aliases: ["-o"]) { Description = "Output directory for the extracted files."}
+        };
+        rreCommand.SetAction(RREAction);
+
+        var gvWiiCommand = new Command("gv-wii", "Unpacks .DAT files for Go Vacation (Wii).")
+        {
+            new Option<FileInfo>("--input", aliases: ["-i"]) { Required = true, Description = "Input .DAT file like DISC.DAT."},
+            new Option<FileInfo>("--bin-path", aliases: ["-e"]) { Required = true, Description =  "Input BIN000.DAT."},
+            new Option<string>("--output", aliases: ["-o"]) { Description = "Output directory for the extracted files."}
+        };
+        gvWiiCommand.SetAction(GoVacationAction);
+
+        var gvSwitchCommand = new Command("gv-switch", "Unpacks .DAT files for Go Vacation (Nintendo Switch).")
+        {
+            new Option<FileInfo>("--input", aliases: ["-i"]) { Required = true, Description = "Input .DAT file like DISC.DAT."},
+            new Option<FileInfo>("--elf-path", aliases: ["-e"]) { Required = true, Description =  "Input .elf file that should already be decompressed using nx2elf2nso. Example: main.elf"},
+            new Option<string>("--output", aliases: ["-o"]) { Description = "Output directory for the extracted files."}
+        };
+        gvSwitchCommand.SetAction(GoVacationSwitchAction);
+
+        var weskiCommand = new Command("weski", "Unpacks .DAT files for We Ski / We Ski & Snowboard.")
+        {
+            new Option<FileInfo>("--input", aliases: ["-i"]) { Required = true, Description = "Input .DAT file like SKI.DAT."},
+            new Option<FileInfo>("--elf-path", aliases: ["-e"]) { Required = true, Description = "Input .dol file. Example: main.dol"},
+            new Option<string>("--output", aliases: ["-o"]) { Description = "Output directory for the extracted files."}
+        };
+        weskiCommand.SetAction(WeSkiAndSnowboardVerbsAction);
+
+        ///////////////////////////////////////
+        ///             DATABASE             //
+        ///////////////////////////////////////
+        var exportDbCommand = new Command("export-db", "Exports a RR database file to SQLite or CSV.")
+        {
+            new Option<string>("--input", aliases: ["-i"]) { Required = true, Description = "Input file or folder."},
+            new Option<string>("--output", aliases: ["-o"]) { Description = "Output dir (if CSV) or output file (if SQLite)."},
+            new Option<string>("--export-as", aliases: ["-e"]) { Required = true, Description = "How to export. Defaults to CSV. Options: CSV",
+                DefaultValueFactory = (res) => { return "CSV"; } }
+        };
+        exportDbCommand.SetAction(ExportDb);
+
+        /*
+        var importDbCommand = new Command("import-db", "Imports a database file as SQLite and exports it to a RR database file.")
+        {
+            new Option<FileInfo>("--input", aliases: ["-i"]) { Required = true, Description = "Input file or folder."},
+            new Option<string>("--output", aliases: ["-o"]) { Description = "Output file."},
+            new Option<bool>("--little-endian", aliases: ["-le"]) { Description = "Whether to import the database as little-endian (for PS Vita Ridge Racer). Defaults to false (BE)." },
+        };
+        importDbCommand.SetAction(ImportDb);
+        */
+
+        ///////////////////////////////////////
+        ///               UTILS              //
+        ///////////////////////////////////////
+        var decompressCommand = new Command("decompress", "Decompresses a file (starting with hex bytes 5A 3F 2E 00 (0x5A3F2E00) found in Go Vacation and possibly other games.\n" +
+            "Examples: STATIC.DAT, files in BIN000.DAT")
+        {
+            new Option<string>("--input", aliases: ["-i"]) { Required = true, Description = "Input file or folder."},
+        };
+        decompressCommand.SetAction(DecompressAction);
+
+        var rootCommand = new RootCommand("RRUnpacker")
+        {
+            rr7Command,
+            rr7PackCommand,
+            rr6Command,
+            rrnCommand,
+            rreCommand,
+            gvWiiCommand,
+            gvSwitchCommand,
+            weskiCommand,
+
+            exportDbCommand,
+            //importDbCommand,
+
+            decompressCommand
+        };
+
+        return await rootCommand.Parse(args).InvokeAsync();
     }
 
-    public static void RR7Action(RR7Verbs options)
+    public static void RR7Action(ParseResult parseResult)
     {
-        if (!File.Exists(options.ElfPath))
-        {
-            Console.WriteLine($"Provided ELF file '{options.ElfPath}' does not exist.");
+        if (!CheckInputExists(parseResult, out FileInfo? inputFile))
             return;
-        }
 
-        if (!File.Exists(options.InputPath))
-        {
-            Console.WriteLine($"Provided .DAT file '{options.InputPath}' does not exist.");
+        if (!GetOutputPath(parseResult, inputFile, out string? outputPath))
             return;
-        }
 
-        if (!string.IsNullOrEmpty(options.OutputPath) && !Directory.Exists(options.OutputPath))
-        {
-            Console.WriteLine($"Provided output path '{options.OutputPath}' does not exist.");
-            return;
-        }
-
-        if (string.IsNullOrEmpty(options.OutputPath))
-        {
-            var dirInfo = new FileInfo(options.InputPath).DirectoryName;
-            if (dirInfo is not null)
-                options.OutputPath = Path.Combine(dirInfo, $"{Path.GetFileNameWithoutExtension(options.InputPath)}_extracted");
-            else
-                options.OutputPath = new FileInfo(options.InputPath).DirectoryName ?? "extracted";
-        }
-
-        var toc = new RR7TableOfContents(options.GameCode, options.ElfPath);
+        string gameCode = parseResult.GetRequiredValue<string>("--gamecode");
+        FileInfo elfPath = parseResult.GetRequiredValue<FileInfo>("--elf-path");
+        var toc = new RR7TableOfContents(gameCode, elfPath.FullName);
         toc.Read();
 
-        var unpacker = new RRUnpacker<RR7TableOfContents>(options.InputPath, options.OutputPath);
+        var unpacker = new RRUnpacker<RR7TableOfContents>(inputFile.FullName, outputPath);
         unpacker.SetToc(toc);
         unpacker.ExtractContainers();
     }
 
-    public static void RR7PackAction(RR7PackVerbs options)
+    public static void RR7PackAction(ParseResult parseResult)
     {
-        if (!File.Exists(options.ElfPath))
-        {
-            Console.WriteLine($"Provided ELF file '{options.ElfPath}' does not exist.");
+        if (!CheckInputExists(parseResult, out FileInfo? inputFile))
             return;
-        }
 
-        if (!Directory.Exists(options.ModFolder))
-        {
-            Console.WriteLine($"Mod folder '{options.ModFolder}' does not exist.");
-            return;
-        }
+        string modFolder = parseResult.GetRequiredValue<string>("--mod-folder");
+        FileInfo elfPath = parseResult.GetRequiredValue<FileInfo>("--elf-path");
+        string gameCode = parseResult.GetRequiredValue<string>("--gamecode");
 
-
-        var toc = new RR7TableOfContents(options.GameCode, options.ElfPath);
+        var toc = new RR7TableOfContents(gameCode, elfPath.FullName);
         toc.Read();
 
-        using RR7Patcher patcher = new RR7Patcher(toc, options.ElfPath, options.InputPath);
-        patcher.Patch(options.ModFolder);
+        using RR7Patcher patcher = new RR7Patcher(toc, elfPath.FullName, inputFile.FullName);
+        patcher.Patch(modFolder);
     }
 
-    public static void RR6Action(RR6Verbs options)
+    public static void RR6Action(ParseResult parseResult)
     {
-        if (!File.Exists(options.XexPath))
-        {
-            Console.WriteLine($"Provided XEX file '{options.XexPath}' does not exist.");
-            return;
-        }
-
-        if (!File.Exists(options.InputPath))
-        {
-            Console.WriteLine($"Provided .DAT file '{options.InputPath}' does not exist.");
-            return;
-        }
-
-        if (!string.IsNullOrEmpty(options.OutputPath) && !Directory.Exists(options.OutputPath))
-        {
-            Console.WriteLine($"Provided output path '{options.OutputPath}' does not exist.");
-            return;
-        }
-
-        if (string.IsNullOrEmpty(options.OutputPath))
-        {
-            var dirInfo = new FileInfo(options.InputPath).DirectoryName;
-            if (dirInfo is not null)
-                options.OutputPath = Path.Combine(dirInfo, $"{Path.GetFileNameWithoutExtension(options.InputPath)}_extracted");
-            else
-                options.OutputPath = new FileInfo(options.InputPath).DirectoryName ?? "extracted";
-        }
-
-        if (!CheckXEX(options.XexPath))
+        if (!CheckInputExists(parseResult, out FileInfo? inputFile))
             return;
 
-        var toc = new RR6TableOfContents(options.XexPath);
+        FileInfo xexPath = parseResult.GetRequiredValue<FileInfo>("--xex-path");
+
+        if (!GetOutputPath(parseResult, inputFile, out string? outputPath))
+            return;
+
+        if (!CheckXEX(xexPath.FullName))
+            return;
+
+        var toc = new RR6TableOfContents(xexPath.FullName);
         toc.Read();
 
-        var unpacker = new RRUnpacker<RR6TableOfContents>(options.InputPath, options.OutputPath);
+        var unpacker = new RRUnpacker<RR6TableOfContents>(inputFile.FullName, outputPath);
         unpacker.SetToc(toc);
         unpacker.ExtractContainers();
     }
@@ -181,245 +249,134 @@ class Program
         return true;
     }
 
-    public static void RRNAction(RRNVerbs options)
+    public static void RRNAction(ParseResult parseResult)
     {
-        if (!File.Exists(options.InfoPath))
-        {
-            Console.WriteLine($"Provided Info file '{options.InfoPath}' does not exist.");
+        if (!CheckInputExists(parseResult, out FileInfo? inputFile))
             return;
-        }
 
-        if (!File.Exists(options.InputPath))
-        {
-            Console.WriteLine($"Provided .DAT file '{options.InputPath}' does not exist.");
+        FileInfo infoFile = parseResult.GetRequiredValue<FileInfo>("--info");
+
+        if (!GetOutputPath(parseResult, inputFile, out string? outputPath))
             return;
-        }
 
-        if (!string.IsNullOrEmpty(options.OutputPath) && !Directory.Exists(options.OutputPath))
-        {
-            Console.WriteLine($"Provided output path '{options.OutputPath}' does not exist.");
-            return;
-        }
-
-        if (string.IsNullOrEmpty(options.OutputPath))
-        {
-            var dirInfo = new FileInfo(options.InputPath).DirectoryName;
-            if (dirInfo is not null)
-                options.OutputPath = Path.Combine(dirInfo, $"{Path.GetFileNameWithoutExtension(options.InputPath)}_extracted");
-            else
-                options.OutputPath = new FileInfo(options.InputPath).DirectoryName ?? "extracted";
-        }
-
-        var toc = new RRNTableOfContents(options.InfoPath);
+        var toc = new RRNTableOfContents(infoFile.FullName);
         toc.Read();
 
-        var unpacker = new RRUnpacker<RRNTableOfContents>(options.InputPath, options.OutputPath);
+        var unpacker = new RRUnpacker<RRNTableOfContents>(inputFile.FullName, outputPath);
         unpacker.SetToc(toc);
         unpacker.ExtractContainers();
     }
 
-    public static void RRPSPAction(RRPSPVerbs options)
+    public static void RRPSPAction(ParseResult parseResult)
     {
-        if (!File.Exists(options.ElfPath))
-        {
-            Console.WriteLine($"Provided Elf file '{options.ElfPath}' does not exist.");
+        if (!CheckInputExists(parseResult, out FileInfo? inputFile))
             return;
-        }
 
-        if (!File.Exists(options.InputPath))
-        {
-            Console.WriteLine($"Provided .DAT file '{options.InputPath}' does not exist.");
+        FileInfo elfPath = parseResult.GetRequiredValue<FileInfo>("--elf-path");
+        string gameCode = parseResult.GetRequiredValue<string>("--gamecode");
+
+        if (!GetOutputPath(parseResult, inputFile, out string? outputPath))
             return;
-        }
 
-        if (!string.IsNullOrEmpty(options.OutputPath) && !Directory.Exists(options.OutputPath))
-        {
-            Console.WriteLine($"Provided output path '{options.OutputPath}' does not exist.");
-            return;
-        }
-
-        if (string.IsNullOrEmpty(options.OutputPath))
-        {
-            var dirInfo = new FileInfo(options.InputPath).DirectoryName;
-            if (dirInfo is not null)
-                options.OutputPath = Path.Combine(dirInfo, $"{Path.GetFileNameWithoutExtension(options.InputPath)}_extracted");
-            else
-                options.OutputPath = new FileInfo(options.InputPath).DirectoryName ?? "extracted";
-        }
-
-        var toc = new RRPTableOfContents(options.GameCode, options.ElfPath);
+        var toc = new RRPTableOfContents(gameCode, elfPath.FullName);
         toc.Read();
 
-        var unpacker = new RRUnpacker<RRPTableOfContents>(options.InputPath, options.OutputPath);
+        var unpacker = new RRUnpacker<RRPTableOfContents>(inputFile.FullName, outputPath);
         unpacker.SetToc(toc);
         unpacker.ExtractContainers();
     }
 
-    public static void RREAction(RREVerbs options)
+    public static void RREAction(ParseResult parseResult)
     {
-        if (!File.Exists(options.ElfPath))
-        {
-            Console.WriteLine($"Provided ELF file '{options.ElfPath}' does not exist.");
+        if (!CheckInputExists(parseResult, out FileInfo? inputFile))
             return;
-        }
 
-        if (!File.Exists(options.InputPath))
-        {
-            Console.WriteLine($"Provided .DAT file '{options.InputPath}' does not exist.");
+        FileInfo elfPath = parseResult.GetRequiredValue<FileInfo>("--elf-path");
+
+        if (!GetOutputPath(parseResult, inputFile, out string? outputPath))
             return;
-        }
 
-        if (!string.IsNullOrEmpty(options.OutputPath) && !Directory.Exists(options.OutputPath))
-        {
-            Console.WriteLine($"Provided output path '{options.OutputPath}' does not exist.");
-            return;
-        }
-
-        if (string.IsNullOrEmpty(options.OutputPath))
-        {
-            var dirInfo = new FileInfo(options.InputPath).DirectoryName;
-            if (dirInfo is not null)
-                options.OutputPath = Path.Combine(dirInfo, $"{Path.GetFileNameWithoutExtension(options.InputPath)}_extracted");
-            else
-                options.OutputPath = new FileInfo(options.InputPath).DirectoryName ?? "extracted";
-        }
-
-        var toc = new RRETableOfContents(options.ElfPath);
+        var toc = new RRETableOfContents(elfPath.FullName);
         toc.Read();
 
-        var unpacker = new RRUnpacker<RRETableOfContents>(options.InputPath, options.OutputPath);
+        var unpacker = new RRUnpacker<RRETableOfContents>(inputFile.FullName, outputPath);
         unpacker.SetToc(toc);
         unpacker.ExtractContainers();
     }
 
 
-    public static void GoVacationAction(GoVacationVerbs options)
+    public static void GoVacationAction(ParseResult parseResult)
     {
-        if (!File.Exists(options.BinPath))
-        {
-            Console.WriteLine($"Provided BIN000 file '{options.BinPath}' does not exist.");
+        if (!CheckInputExists(parseResult, out FileInfo? inputFile))
             return;
-        }
 
-        if (!File.Exists(options.InputPath))
-        {
-            Console.WriteLine($"Provided .DAT file '{options.InputPath}' does not exist.");
+        FileInfo binFile = parseResult.GetRequiredValue<FileInfo>("--bin-path");
+
+        if (!GetOutputPath(parseResult, inputFile, out string? outputPath))
             return;
-        }
 
-        if (!string.IsNullOrEmpty(options.OutputPath) && !Directory.Exists(options.OutputPath))
-        {
-            Console.WriteLine($"Provided output path '{options.OutputPath}' does not exist.");
-            return;
-        }
-
-        if (string.IsNullOrEmpty(options.OutputPath))
-        {
-            var dirInfo = new FileInfo(options.InputPath).DirectoryName;
-            if (dirInfo is not null)
-                options.OutputPath = Path.Combine(dirInfo, $"{Path.GetFileNameWithoutExtension(options.InputPath)}_extracted");
-            else
-                options.OutputPath = new FileInfo(options.InputPath).DirectoryName ?? "extracted";
-        }
-
-        var toc = new GoVacationWiiTableOfContents(options.InputPath, options.BinPath);
+        var toc = new GoVacationWiiTableOfContents(inputFile.FullName, binFile.FullName);
         toc.Read();
 
-        var unpacker = new RRUnpacker<GoVacationWiiTableOfContents>(options.InputPath, options.OutputPath);
+        var unpacker = new RRUnpacker<GoVacationWiiTableOfContents>(inputFile.FullName, outputPath);
         unpacker.SetToc(toc);
         unpacker.ExtractContainers();
     }
 
-    public static void GoVacationSwitchAction(GoVacationSwitchVerbs options)
+    public static void GoVacationSwitchAction(ParseResult parseResult)
     {
-        if (!File.Exists(options.ElfPath))
-        {
-            Console.WriteLine($"Provided ELF file '{options.ElfPath}' does not exist.");
+        if (!CheckInputExists(parseResult, out FileInfo? inputFile))
             return;
-        }
 
-        if (!File.Exists(options.InputPath))
-        {
-            Console.WriteLine($"Provided .DAT file '{options.InputPath}' does not exist.");
+        FileInfo elfPath = parseResult.GetRequiredValue<FileInfo>("--elf-path");
+
+        if (!GetOutputPath(parseResult, inputFile, out string? outputPath))
             return;
-        }
 
-        if (!string.IsNullOrEmpty(options.OutputPath) && !Directory.Exists(options.OutputPath))
-        {
-            Console.WriteLine($"Provided output path '{options.OutputPath}' does not exist.");
-            return;
-        }
-
-        if (string.IsNullOrEmpty(options.OutputPath))
-        {
-            var dirInfo = new FileInfo(options.InputPath).DirectoryName;
-            if (dirInfo is not null)
-                options.OutputPath = Path.Combine(dirInfo, $"{Path.GetFileNameWithoutExtension(options.InputPath)}_extracted");
-            else
-                options.OutputPath = new FileInfo(options.InputPath).DirectoryName ?? "extracted";
-        }
-
-        var toc = new GoVacationNXTableOfContents(options.InputPath, options.ElfPath);
+        var toc = new GoVacationNXTableOfContents(inputFile.FullName, elfPath.FullName);
         toc.Read();
 
-        var unpacker = new RRUnpacker<GoVacationNXTableOfContents>(options.InputPath, options.OutputPath);
+        var unpacker = new RRUnpacker<GoVacationNXTableOfContents>(inputFile.FullName, outputPath);
         unpacker.SetToc(toc);
         unpacker.ExtractContainers();
     }
 
-    public static void WeSkiAndSnowboardVerbsAction(WeSkiAndSnowboardVerbs options)
+    public static void WeSkiAndSnowboardVerbsAction(ParseResult parseResult)
     {
-        if (!File.Exists(options.DolPath))
-        {
-            Console.WriteLine($"Provided dol file '{options.DolPath}' does not exist (it should point to main.dol).");
+        if (!CheckInputExists(parseResult, out FileInfo? inputFile))
             return;
-        }
 
-        if (!File.Exists(options.InputPath))
-        {
-            Console.WriteLine($"Provided .DAT file '{options.InputPath}' does not exist.");
+        FileInfo dolFile = parseResult.GetRequiredValue<FileInfo>("--elf-path");
+
+        if (!GetOutputPath(parseResult, inputFile, out string? outputPath))
             return;
-        }
 
-        if (!string.IsNullOrEmpty(options.OutputPath) && !Directory.Exists(options.OutputPath))
-        {
-            Console.WriteLine($"Provided output path '{options.OutputPath}' does not exist.");
-            return;
-        }
-
-        if (string.IsNullOrEmpty(options.OutputPath))
-        {
-            var dirInfo = new FileInfo(options.InputPath).DirectoryName;
-            if (dirInfo is not null)
-                options.OutputPath = Path.Combine(dirInfo, $"{Path.GetFileNameWithoutExtension(options.InputPath)}_extracted");
-            else
-                options.OutputPath = new FileInfo(options.InputPath).DirectoryName ?? "extracted";
-        }
-
-        var toc = new WeSkiAndSnowboardTableOfContents(options.InputPath, options.DolPath);
+        var toc = new WeSkiAndSnowboardTableOfContents(inputFile.FullName, dolFile.FullName);
         toc.Read();
 
-        var unpacker = new RRUnpacker<WeSkiAndSnowboardTableOfContents>(options.InputPath, options.OutputPath);
+        var unpacker = new RRUnpacker<WeSkiAndSnowboardTableOfContents>(inputFile.FullName, outputPath);
         unpacker.SetToc(toc);
         unpacker.ExtractContainers();
     }
 
-    public static void DecompressAction(DecompressVerbs options)
+    public static void DecompressAction(ParseResult parseResult)
     {
-        if (Directory.Exists(options.InputPath))
+        string inputPath = parseResult.GetRequiredValue<string>("--input");
+
+        if (Directory.Exists(inputPath))
         {
-            foreach (var file in Directory.GetFiles(options.InputPath, "*", SearchOption.AllDirectories))
+            foreach (var file in Directory.GetFiles(inputPath, "*", SearchOption.AllDirectories))
             {
                 DecompressFile(file);
             }
         }
-        else if (File.Exists(options.InputPath))
+        else if (File.Exists(inputPath))
         {
-            DecompressFile(options.InputPath);
+            DecompressFile(inputPath);
         }
         else
         {
-            Console.WriteLine($"ERROR: File or folder {options.InputPath} does not exist.");
+            Console.WriteLine($"ERROR: File or folder {inputPath} does not exist.");
             return;
         }
     }
@@ -447,18 +404,22 @@ class Program
     //////////////////////////////////////////
     //// DB Stuff
     //////////////////////////////////////////
-    public static void ExportDb(ExportDbVerbs options)
+    public static void ExportDb(ParseResult parseResult)
     {
+        string inputPath = parseResult.GetRequiredValue<string>("--input");
+        string? outputPath = parseResult.GetValue<string>("--output");
+        string exportAs = parseResult.GetRequiredValue<string>("--export-as");
+
         RRDatabaseManager db;
-        if (Directory.Exists(options.InputPath))
+        if (Directory.Exists(inputPath))
         {
-            db = RRDatabaseManager.FromDirectory(options.InputPath);
-            db.ExportAllToCSV(options.OutputPath ?? Path.GetDirectoryName(Path.GetFullPath(options.InputPath)));
+            db = RRDatabaseManager.FromDirectory(inputPath);
+            db.ExportAllToCSV(outputPath ?? Path.GetDirectoryName(Path.GetFullPath(inputPath))!);
         }
-        else if (File.Exists(options.InputPath))
+        else if (File.Exists(inputPath))
         {
             db = new RRDatabaseManager();
-            var table = new Table(options.InputPath);
+            var table = new Table(inputPath);
             table.Read();
 
             db.Tables.Add(table);
@@ -470,9 +431,9 @@ class Program
         }
 
 
-        if (options.ExportAs == "CSV")
+        if (exportAs == "CSV")
         {
-            db.ExportAllToCSV(options.OutputPath ?? Path.GetDirectoryName(Path.GetFullPath(options.InputPath)));
+            db.ExportAllToCSV(outputPath ?? Path.GetDirectoryName(Path.GetFullPath(inputPath))!);
             Console.WriteLine($"Done. Exported {db.Tables.Count} table(s) to CSV.");
         }
         /* Commented out for now. Check comment in SQLiteExporter.cs
@@ -509,163 +470,36 @@ class Program
     }
     */
 
-    [Verb("rr7", HelpText = "Unpacks .DAT files for Ridge Racer 7 (PS3).")]
-    public class RR7Verbs
+    private static bool CheckInputExists(ParseResult result, [NotNullWhen(true)] out FileInfo? inputFile)
     {
-        [Option('i', "input", Required = true, HelpText = "Input .DAT file like RR7.DAT.")]
-        public required string InputPath { get; set; }
+        inputFile = result.GetRequiredValue<FileInfo>("--input");
+        if (!inputFile.Exists)
+        {
+            Console.WriteLine($"ERROR: File '{inputFile.FullName}' does not exist");
+            return false;
+        }
 
-        [Option('e', "elf-path", Required = true, HelpText = "Input .elf file that should already be decrypted. Example: main.elf.")]
-        public required string ElfPath { get; set; }
-
-        [Option('g', "gamecode", Required = true, HelpText = "Game Code of the game. Example: NPEB00513")]
-        public required string GameCode { get; set; }
-
-        [Option('o', "output", Required = true, HelpText = "Output directory for the extracted files.")]
-        public required string OutputPath { get; set; }
+        return true;
     }
 
-    [Verb("rr7pack", HelpText = "Appends modded files to a .DAT file (and updates the elf executable).")]
-    public class RR7PackVerbs
+    private static bool GetOutputPath(ParseResult parseResult, FileInfo inputFile, [NotNullWhen(true)] out string? outputPath)
     {
-        [Option('m', "mod-folder", Required = true, HelpText = "Input Mod folder")]
-        public required string ModFolder { get; set; }
+        outputPath = parseResult.GetValue<string>("--output");
+        if (!string.IsNullOrEmpty(outputPath) && !Directory.Exists(outputPath))
+        {
+            Console.WriteLine($"Provided output path '{outputPath}' does not exist.");
+            return false;
+        }
 
-        [Option('e', "elf-path", Required = true, HelpText = "Input .elf file that should already be decrypted. Example: main.elf.")]
-        public required string ElfPath { get; set; }
+        if (string.IsNullOrWhiteSpace(outputPath))
+        {
+            var dirInfo = inputFile.Directory?.FullName;
+            if (dirInfo is not null)
+                outputPath = Path.Combine(dirInfo, $"{Path.GetFileNameWithoutExtension(inputFile.FullName)}_extracted");
+            else
+                outputPath = new FileInfo(inputFile.FullName).DirectoryName ?? "extracted";
+        }
 
-        [Option('g', "gamecode", Required = true, HelpText = "Game Code of the game. Example: NPEB00513")]
-        public required string GameCode { get; set; }
-
-        [Option('i', Required = true, HelpText = "Input .DAT file like RR7.DAT.")]
-        public required string InputPath { get; set; }
-    }
-
-    [Verb("rr6", HelpText = "Unpacks .DAT files for Ridge Racer 6 (X360).")]
-    public class RR6Verbs
-    {
-        [Option('i', "input", Required = true, HelpText = "Input .DAT file like RRM.DAT/RRM2.DAT/RRM3.DAT.")]
-        public required string InputPath { get; set; }
-
-        [Option('x', "xex-path", Required = true, HelpText = "Input .xex file. MUST be decrypted through XeXTool.")]
-        public required string XexPath { get; set; }
-
-        [Option('o', "output", HelpText = "Output directory for the extracted files.")]
-        public string? OutputPath { get; set; }
-    }
-
-    [Verb("rrn", HelpText = "Unpacks .DAT files for Ridge Racer (PS Vita).")]
-    public class RRNVerbs
-    {
-        [Option('i', "input", Required = true, HelpText = "Input .DAT file like RRN.DAT.")]
-        public required string InputPath { get; set; }
-
-        [Option("info", Required = true, HelpText = "Input .info linked to the .dat file which should be next to it.")]
-        public required string InfoPath { get; set; }
-
-        [Option('o', "output", Required = true, HelpText = "Output directory for the extracted files.")]
-        public string? OutputPath { get; set; }
-    }
-
-    [Verb("rrpsp", HelpText = "Unpacks .DAT files for Ridge Racer Version 2 (PSP).")]
-    public class RRPSPVerbs
-    {
-        [Option('i', "input", Required = true, HelpText = "Input .DAT file like RRP.DAT.")]
-        public required string InputPath { get; set; }
-
-        [Option('e', "elf-path", Required = true, HelpText = "Input .elf file that should already be decrypted. Example: BOOT.elf.")]
-        public required string ElfPath { get; set; }
-
-        [Option('g', "gamecode", Required = true, HelpText = "Game Code of the game. Example: UCES00422")]
-        public required string GameCode { get; set; }
-
-        [Option('o', "output", HelpText = "Output directory for the extracted files.")]
-        public string? OutputPath { get; set; }
-    }
-
-    [Verb("rre", HelpText = "Unpacks .DAT files for R:Racing Evolution.")]
-    public class RREVerbs
-    {
-        [Option('i', "input", Required = true, HelpText = "Input .DAT file, should be RGC.DAT.")]
-        public required string InputPath { get; set; }
-
-        [Option('e', "elf-path", Required = true, HelpText = "Input .elf file of the game. Example: SLES_523.09.")]
-        public required string ElfPath { get; set; }
-
-        [Option('o', "output", HelpText = "Output directory for the extracted files.")]
-        public string? OutputPath { get; set; }
-    }
-
-    [Verb("gv-wii", HelpText = "Unpacks .DAT files for Go Vacation (Wii).")]
-    public class GoVacationVerbs
-    {
-        [Option('i', "input", Required = true, HelpText = "Input .DAT file like DISC.DAT.")]
-        public required string InputPath { get; set; }
-
-        [Option('e', "bin-path", Required = true, HelpText = "Input BIN000.DAT.")]
-        public required string BinPath { get; set; }
-
-        [Option('o', "output", HelpText = "Output directory for the extracted files.")]
-        public string? OutputPath { get; set; }
-    }
-
-    [Verb("gv-switch", HelpText = "Unpacks .DAT files for Go Vacation (Nintendo Switch).")]
-    public class GoVacationSwitchVerbs
-    {
-        [Option('i', "input", Required = true, HelpText = "Input .DAT file like DISC.DAT.")]
-        public required string InputPath { get; set; }
-
-        [Option('e', "elf-path", Required = true, HelpText = "Input .elf file that should already be decompressed using nx2elf2nso. Example: main.elf")]
-        public required string ElfPath { get; set; }
-
-        [Option('o', "output", HelpText = "Output directory for the extracted files.")]
-        public string? OutputPath { get; set; }
-    }
-
-    [Verb("weski", HelpText = "Unpacks .DAT files for We Ski / We Ski & Snowboard.")]
-    public class WeSkiAndSnowboardVerbs
-    {
-        [Option('i', "input", Required = true, HelpText = "Input .DAT file like SKI.DAT.")]
-        public required string InputPath { get; set; }
-
-        [Option('e', "elf-path", Required = true, HelpText = "Input .dol file. Example: main.dol")]
-        public required string DolPath { get; set; }
-
-        [Option('o', "output", HelpText = "Output directory for the extracted files.")]
-        public string? OutputPath { get; set; }
-    }
-
-    [Verb("export-db", HelpText = "Exports a RR database file to SQLite or CSV.")]
-    public class ExportDbVerbs
-    {
-        [Option('i', "input", Required = true, HelpText = "Input file or folder.")]
-        public required string InputPath { get; set; }
-
-        [Option('o', "output", HelpText = "Output dir (if CSV) or output file (if SQLite).")]
-        public string? OutputPath { get; set; }
-
-        [Option("export-as", Default = "CSV", HelpText = "How to export. Defaults to SQLite. Options: CSV")]
-        public string? ExportAs { get; set; }
-    }
-
-    [Verb("import-db", HelpText = "Imports a database file as SQLite and exports it to a RR database file.")]
-    public class ImportDbVerbs
-    {
-        [Option('i', "input", Required = true, HelpText = "Input file or folder.")]
-        public required string InputPath { get; set; }
-
-        [Option('o', "output", Required = true, HelpText = "Output file.")]
-        public string? OutputPath { get; set; }
-
-        [Option("little-endian", HelpText = "Whether to import the database as little-endian (for PS Vita Ridge Racer). Defaults to false (BE).")]
-        public bool LittleEndian { get; set; }
-    }
-
-    [Verb("decompress", HelpText = "Decompresses a file (starting with hex bytes 5A 3F 2E 00 (0x5A3F2E00) found in Go Vacation and possibly other games.\n" +
-        "Examples: STATIC.DAT, files in BIN000.DAT")]
-    public class DecompressVerbs
-    {
-        [Option('i', "input", Required = true, HelpText = "Input file or folder.")]
-        public required string InputPath { get; set; }
+        return true;
     }
 }

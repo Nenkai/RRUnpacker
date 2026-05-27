@@ -36,6 +36,12 @@ public class GoVacationWiiTableOfContents : ITableOfContents
             687, 0x406F68, "SGVEAF_proto_container_names.txt",
             4674, 0x40E244, "SGVEAF_proto_file_names.txt",
             0x2D00B800),
+            
+        // Go Vacation (Wii) - US/NTSC-U - SGVEAF
+        new GoVacationTocInformation("DISC.DAT",
+            649, 0x3CF818, "SGVEAF_container_names.txt",
+            4464, 0x3D6504, "SGVEAF_file_names.txt",
+            0x2F1BA800),
     ];
 
     public GoVacationTocInformation CurrentTOCInfo { get; set; }

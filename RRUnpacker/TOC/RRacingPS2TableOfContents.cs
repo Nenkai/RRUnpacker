@@ -16,7 +16,7 @@ namespace RRUnpacker.TOC;
 /// <summary>
 /// TOC Within the PS2 executable for R:Racing.
 /// </summary>
-public class RRETableOfContents : ITableOfContents
+public class RRacingPS2TableOfContents : ITableOfContents
 {
     // Within SLES_52309
     public const int TOC_OFFSET = 0x399EC0;
@@ -27,10 +27,9 @@ public class RRETableOfContents : ITableOfContents
     public List<RRFileDescriptor> FileDescriptors;
     public List<RRContainerDescriptor> ContainerDescriptors;
 
-
     private string _elfPath;
 
-    public RRETableOfContents(string elfPath)
+    public RRacingPS2TableOfContents(string elfPath)
     {
         _elfPath = elfPath;
     }
@@ -67,7 +66,7 @@ public class RRETableOfContents : ITableOfContents
             desc.SectorSize = (ushort)bs.ReadUInt32();
             desc.FileDescriptorEntryIndexStart = (ushort)bs.ReadUInt32();
             desc.FileDescriptorEntryIndexEnd = (ushort)bs.ReadUInt32();
-            desc.CompressionType = (RRCompressionType)bs.ReadUInt16();
+            desc.CompressionType = (RRCompressionType)bs.ReadUInt32();
             desc.CompressedSize = bs.ReadUInt32();
             desc.UncompressedSize = bs.ReadUInt32();
             desc.PaddingSize = bs.ReadUInt32();

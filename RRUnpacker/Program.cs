@@ -82,13 +82,21 @@ class Program
         };
         rrpspCommand.SetAction(RRPSPAction);
 
-        var rreCommand = new Command("rre", "Unpacks .DAT files for R:Racing Evolution.")
+        var rracingPs2Command = new Command("rracing-ps2", "Unpacks .DAT files for R:Racing Evolution (PS2).")
         {
             new Option<FileInfo>("--input", aliases: ["-i"]) { Required = true, Description = "Input .DAT file, should be RGC.DAT."},
             new Option<FileInfo>("--elf-path", aliases: ["-e"]) { Required = true, Description =  "Input .elf file of the game. Example: SLES_523.09."},
             new Option<string>("--output", aliases: ["-o"]) { Description = "Output directory for the extracted files."}
         };
-        rreCommand.SetAction(RREAction);
+        rracingPs2Command.SetAction(RRacingPS2Action);
+
+        var rracingGcCommand = new Command("rracing-gc", "Unpacks .DAT files for R:Racing Evolution (GC).")
+        {
+            new Option<FileInfo>("--input", aliases: ["-i"]) { Required = true, Description = "Input .DAT file, should be RGC.DAT."},
+            new Option<FileInfo>("--elf-path", aliases: ["-e"]) { Required = true, Description = "Input .dol file. Example: main.dol"},
+            new Option<string>("--output", aliases: ["-o"]) { Description = "Output directory for the extracted files."}
+        };
+        rracingGcCommand.SetAction(RRacingGCAction);
 
         var gvWiiCommand = new Command("gv-wii", "Unpacks .DAT files for Go Vacation (Wii).")
         {
@@ -152,7 +160,8 @@ class Program
             rr7PackCommand,
             rr6Command,
             rrnCommand,
-            rreCommand,
+            rracingPs2Command,
+            rracingGcCommand,
             gvWiiCommand,
             gvSwitchCommand,
             weskiCommand,
@@ -289,7 +298,7 @@ class Program
         unpacker.ExtractContainers();
     }
 
-    public static void RREAction(ParseResult parseResult)
+    public static void RRacingPS2Action(ParseResult parseResult)
     {
         if (!CheckInputExists(parseResult, out FileInfo? inputFile))
             return;
@@ -299,10 +308,28 @@ class Program
         if (!GetOutputPath(parseResult, inputFile, out string? outputPath))
             return;
 
-        var toc = new RRETableOfContents(elfPath.FullName);
+        var toc = new RRacingPS2TableOfContents(elfPath.FullName);
         toc.Read();
 
-        var unpacker = new RRUnpacker<RRETableOfContents>(inputFile.FullName, outputPath);
+        var unpacker = new RRUnpacker<RRacingPS2TableOfContents>(inputFile.FullName, outputPath);
+        unpacker.SetToc(toc);
+        unpacker.ExtractContainers();
+    }
+
+    public static void RRacingGCAction(ParseResult parseResult)
+    {
+        if (!CheckInputExists(parseResult, out FileInfo? inputFile))
+            return;
+
+        FileInfo elfPath = parseResult.GetRequiredValue<FileInfo>("--elf-path");
+
+        if (!GetOutputPath(parseResult, inputFile, out string? outputPath))
+            return;
+
+        var toc = new RRacingGCTableOfContents(inputFile.FullName, elfPath.FullName);
+        toc.Read();
+
+        var unpacker = new RRUnpacker<RRacingGCTableOfContents>(inputFile.FullName, outputPath);
         unpacker.SetToc(toc);
         unpacker.ExtractContainers();
     }

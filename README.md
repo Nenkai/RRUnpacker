@@ -38,6 +38,15 @@ Support for:
 * `ULJS00001` - Ridge Racer PSP Version 1 (JP)
 
 ## R:Racing Evolution
+
+### GameCube
+Support for:
+* `GRJP69` - R: RACING (Europe) (GRJP69)
+* `GRJEAF` - R: RACING Evolution (USA)
+* `GRJJAF` - R:RACING EVOLUTION (Japan)
+
+### PS2
+
 Support for:
 * `SLES_52309` - PS2 PAL Version
 

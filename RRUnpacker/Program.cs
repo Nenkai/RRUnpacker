@@ -19,14 +19,14 @@ namespace RRUnpacker;
 
 class Program
 {
-    public const string Version = "2.3.0";
+    public const string Version = "2.4.0";
 
     static async Task<int> Main(string[] args)
     {
         Console.WriteLine("-----------------------------------------");
         Console.WriteLine($"- RRUnpacker {Version} by Nenkai -");
         Console.WriteLine("- Ridge Racer PSP/6/7/PSVita");
-        Console.WriteLine("- R:Racing Evolution (PS2)");
+        Console.WriteLine("- R:Racing Evolution (GC/PS2)");
         Console.WriteLine("- Go Vacation (Wii/Nintendo Switch)");
         Console.WriteLine("- We Ski (Wii)");
         Console.WriteLine("- We Ski & Snowboard (Wii)");
